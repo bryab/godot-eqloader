@@ -1,0 +1,12 @@
+[package]
+name = "godot-eqloader"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+godot = { git = "https://github.com/godot-rust/gdextension", branch = "master" }
+libeq = { git = "https://github.com/cjab/libeq.git", branch = "master" }

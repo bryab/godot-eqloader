@@ -1,0 +1,7 @@
+[configuration]
+entry_symbol = "gdextension_rust_init"
+
+[libraries]
+linux.64 = "res://../../target/debug/libgodot_eqloader.so"
+macos.64 = "res://../../target/debug/libgodot_qloader.dylib"
+windows.64 = "res://../../target/debug/libgodot_eqloader.dll"
