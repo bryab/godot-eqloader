@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://cbd21ok33rgau"]
-
-[ext_resource type="Script" path="res://EQLoaderTest.gd" id="1_a32q7"]
-
-[node name="Node3D" type="Node3D"]
-script = ExtResource("1_a32q7")

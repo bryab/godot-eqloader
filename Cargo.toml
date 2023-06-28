@@ -8,5 +8,8 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-godot = { git = "https://github.com/godot-rust/gdextension", branch = "master" }
-libeq = { git = "https://github.com/cjab/libeq.git", branch = "master" }
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+libeq = { git = "https://github.com/bryab/libeq", branch = "archive-reader" }
+image = { version="*", default-features = false, features=["bmp"]}
+wav = {version="*"}
+owning_ref = "*"

@@ -1,0 +1,19 @@
+[gd_scene load_steps=4 format=3 uid="uid://bvlbu0mm6qikk"]
+
+[ext_resource type="Script" path="res://EQLoaderExample.gd" id="1_7ejm7"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_thjt6"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hy0f6"]
+
+[node name="Node3D" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.877582, -0.229849, 0.420736, 0, 0.877582, 0.479426, -0.479426, -0.420736, 0.770151, 1.68294, 1.9177, 4.62009)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_thjt6")
+surface_material_override/0 = SubResource("StandardMaterial3D_hy0f6")
+
+[node name="S3DExample" type="Node3D" parent="."]
+script = ExtResource("1_7ejm7")
