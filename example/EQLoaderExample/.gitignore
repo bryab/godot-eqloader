@@ -1,3 +1,4 @@
 # Godot 4+ specific ignores
 .godot/
 eq_data/*
+!eq_data/.gitkeep
