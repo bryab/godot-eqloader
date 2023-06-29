@@ -3,11 +3,15 @@ pub mod texture;
 use godot::prelude::*;
 
 pub fn wld_f32_pos_to_gd(tup: &(f32, f32, f32)) -> Vector3 {
-    Vector3::new(tup.0, tup.2, tup.1)
+    Vector3::new(tup.0 * -1., tup.2, tup.1)
 }
 
 pub fn wld_i16_pos_to_gd(p: &(i16, i16, i16), scale: f32) -> Vector3 {
-    Vector3::new(p.0 as f32 * scale, p.2 as f32 * scale, p.1 as f32 * scale)
+    Vector3::new(
+        p.0 as f32 * scale * -1.,
+        p.2 as f32 * scale,
+        p.1 as f32 * scale,
+    )
 }
 
 // fn f32_tup_to_vec2(tup: &(f32, f32)) -> Vector2 {

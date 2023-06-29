@@ -145,9 +145,9 @@ impl S3DMesh {
                     .iter()
                     .flat_map(|face| {
                         vec![
-                            face.vertex_indexes.2 as i32,
-                            face.vertex_indexes.1 as i32,
                             face.vertex_indexes.0 as i32,
+                            face.vertex_indexes.1 as i32,
+                            face.vertex_indexes.2 as i32,
                         ]
                     })
                     .collect();

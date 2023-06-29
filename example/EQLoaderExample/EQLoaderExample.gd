@@ -1,4 +1,3 @@
-@tool
 extends Node3D
 
 var textures = {}
@@ -7,9 +6,17 @@ var materials = {}
 func _ready():
 	var thread = Thread.new()
 	thread.start(load_random_zone)
+	thread.wait_to_finish()
+
+func get_eq_data_dir():
+	var eq_dir_locations = [OS.get_environment("EQDATA"), "./eq_data"]
+	for eqdir in eq_dir_locations:
+		if DirAccess.open(eqdir) != null:
+			return eqdir
 	
 func get_all_zone_s3ds():
-	var eqdir = "./eq_data"
+	var eqdir = get_eq_data_dir()
+	print("EQ dir: ", eqdir)
 	var valid_files = []
 	for filename in DirAccess.get_files_at(eqdir):
 		if "_" in filename:
@@ -45,7 +52,7 @@ func test_zone_s3d(s3d_filename):
 	# Load all the materials and store them in a dictionary
 	for material in wld.get_materials():
 		if material is S3DMaterial:
-			get_or_create_material(material)
+			create_material(material)
 	
 	# Instantiate the zone meshes
 	for eqmesh in wld.get_meshes():
@@ -53,7 +60,7 @@ func test_zone_s3d(s3d_filename):
 		call_deferred("add_child", mesh_inst)
 			
 
-func get_or_create_material(material_fragment: S3DMaterial, force_create = false) -> Material:
+func create_material(material_fragment: S3DMaterial, force_create = false) -> Material:
 	var material_name = material_fragment.name()
 	if not force_create and material_name in materials:
 		return materials[material_name]
