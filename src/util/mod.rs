@@ -14,6 +14,17 @@ pub fn wld_i16_pos_to_gd(p: &(i16, i16, i16), scale: f32) -> Vector3 {
     )
 }
 
+pub fn wld_rot_to_quat(rot: &(f32, f32, f32)) -> Quaternion {
+    // The quaternion must be created with the native EQ XYZ first, due to rotation order.
+    // Note that in GDScript a Quat can be built directly from a euler.  But here we have to make an empty Quat
+    // and then replace it with euler.
+    let q = Quaternion::new(0., 0., 0., 0.);
+    q.from_euler(Vector3::new(rot.0, rot.1, rot.2));
+    // Then we flip the Y and Z axes
+    // FIXME: This can probably be expressed without these two separate transformations
+    Quaternion::new(-q.x, -q.z, -q.y, q.w)
+}
+
 // fn f32_tup_to_vec2(tup: &(f32, f32)) -> Vector2 {
 //     Vector2::new(tup.0, tup.1)
 // }

@@ -271,7 +271,7 @@ checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 [[package]]
 name = "libeq"
 version = "0.4.0"
-source = "git+https://github.com/bryab/libeq?branch=archive-reader#4b0e79b3dc2eeef62781e90646ad680fd7a01920"
+source = "git+https://github.com/bryab/libeq?branch=godot-eqloader#9d33fcb02cdb785ddc23d2d582642c7ed7d4d0a6"
 dependencies = [
  "libeq_archive",
  "libeq_wld",
@@ -280,7 +280,7 @@ dependencies = [
 [[package]]
 name = "libeq_archive"
 version = "0.4.0"
-source = "git+https://github.com/bryab/libeq?branch=archive-reader#4b0e79b3dc2eeef62781e90646ad680fd7a01920"
+source = "git+https://github.com/bryab/libeq?branch=godot-eqloader#9d33fcb02cdb785ddc23d2d582642c7ed7d4d0a6"
 dependencies = [
  "env_logger 0.7.1",
  "flate2",
@@ -291,7 +291,7 @@ dependencies = [
 [[package]]
 name = "libeq_wld"
 version = "0.3.0"
-source = "git+https://github.com/bryab/libeq?branch=archive-reader#4b0e79b3dc2eeef62781e90646ad680fd7a01920"
+source = "git+https://github.com/bryab/libeq?branch=godot-eqloader#9d33fcb02cdb785ddc23d2d582642c7ed7d4d0a6"
 dependencies = [
  "encoding_rs",
  "env_logger 0.9.3",

@@ -1,10 +1,12 @@
-mod mesh;
-pub use mesh::*;
+mod actordef;
+mod actorinst;
 mod material;
+mod mesh;
 use godot::engine::RefCounted;
 use godot::prelude::*;
 use libeq::wld::parser::{Fragment, WldDoc};
 pub use material::*;
+pub use mesh::*;
 use owning_ref::ArcRef;
 use std::sync::Arc;
 

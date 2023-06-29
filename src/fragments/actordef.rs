@@ -1,0 +1,64 @@
+use godot::engine::RefCounted;
+use godot::prelude::*;
+use libeq::wld::parser::{MeshFragment, ModelFragment, WldDoc};
+use std::sync::Arc;
+extern crate owning_ref;
+use super::{create_fragment_ref, S3DFragment, S3DMesh};
+use crate::wld::create_fragment;
+use owning_ref::ArcRef;
+
+#[derive(GodotClass)]
+#[class(init, base=RefCounted)]
+pub struct S3DActorDef {
+    #[base]
+    base: Base<RefCounted>,
+    fragment: Option<ArcRef<WldDoc, ModelFragment>>,
+}
+
+impl S3DFragment for S3DActorDef {
+    fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
+        self.fragment = Some(create_fragment_ref(wld.clone(), index));
+    }
+}
+
+/// The S3DMaterial object simplifies the Materials and Textures system in S3D files, flattening it into something that is easy to use in Godot.
+#[godot_api]
+impl S3DActorDef {
+    #[func]
+    pub fn name(&self) -> GodotString {
+        GodotString::from(
+            self.get_wld()
+                .get_string(self.get_frag().name_reference)
+                .expect("Failed to get string from WLD!"),
+        )
+    }
+
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+            .as_owner()
+    }
+
+    fn get_frag(&self) -> &ModelFragment {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get Fragment reference!")
+    }
+
+    #[func]
+    fn meshes(&self) -> Array<Gd<S3DMesh>> {
+        let wld = self.get_wld();
+        self.get_frag()
+            .fragment_references
+            .iter()
+            .filter_map(|index| {
+                wld.at(*index as usize - 1)
+                    .expect("Invalid fragment index")
+                    .as_any()
+                    .downcast_ref::<MeshFragment>()
+                    .and_then(|_| Some(create_fragment::<S3DMesh>(wld, *index)))
+            })
+            .collect()
+    }
+}
