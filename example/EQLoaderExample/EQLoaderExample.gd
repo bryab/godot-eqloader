@@ -9,7 +9,7 @@ func _ready():
 	thread.wait_to_finish()
 
 func get_eq_data_dir():
-	var eq_dir_locations = [OS.get_environment("EQDATA"), "./eq_data"]
+	var eq_dir_locations = [OS.get_environment("EQDATA"), "res://eq_data"]
 	for eqdir in eq_dir_locations:
 		if DirAccess.open(eqdir) != null:
 			return eqdir
