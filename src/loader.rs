@@ -18,4 +18,8 @@ impl EQArchiveLoader {
         obj.bind_mut().load(&filename);
         obj
     }
+
+    // set_data_dir
+
+    // load
 }

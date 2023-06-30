@@ -22,7 +22,6 @@ script = ExtResource("1_7ejm7")
 script = ExtResource("2_6wtfn")
 
 [node name="Camera3D" type="Camera3D" parent="PlayerFloater"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerFloater"]
 shape = SubResource("CapsuleShape3D_sgq3o")

@@ -15,15 +15,9 @@ pub struct S3DActorInstance {
     fragment: Option<ArcRef<WldDoc, ObjectLocationFragment>>,
 }
 
-impl S3DFragment for S3DActorInstance {
-    fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
-        self.fragment = Some(create_fragment_ref(wld.clone(), index));
-    }
-}
-
-/// The S3DMaterial object simplifies the Materials and Textures system in S3D files, flattening it into something that is easy to use in Godot.
 #[godot_api]
 impl S3DActorInstance {
+    // FIXME: This appears to be empty
     #[func]
     pub fn name(&self) -> GodotString {
         GodotString::from(
@@ -33,17 +27,13 @@ impl S3DActorInstance {
         )
     }
 
-    fn get_wld(&self) -> &Arc<WldDoc> {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get WLD reference!")
-            .as_owner()
-    }
-
-    fn get_frag(&self) -> &ObjectLocationFragment {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get Fragment reference!")
+    #[func]
+    pub fn actordef_name(&self) -> GodotString {
+        GodotString::from(
+            self.get_wld()
+                .get_string(self.get_frag().actor_def_reference)
+                .expect("Failed to get string from WLD!"),
+        )
     }
 
     /// Returns the vertex colors to be used for this instance, converted into Godot format.
@@ -71,15 +61,53 @@ impl S3DActorInstance {
     }
 
     #[func]
-    pub fn rotation(&self) -> Quaternion {
+    pub fn scale(&self) -> Vector3 {
+        let frag = self.get_frag();
+        let scale_factor = frag
+            .scale_factor
+            .expect("EQ ActorInstance should have scale_factor");
+        let bounding_radius = frag
+            .scale_factor
+            .expect("EQ ActorInstance should have bounding_radius");
+        Vector3::new(scale_factor, bounding_radius, scale_factor)
+    }
+
+    #[func]
+    pub fn quaternion(&self) -> Quaternion {
         let loc = self.get_loc();
         wld_rot_to_quat(&(loc.rotate_x, loc.rotate_y, loc.rotate_z))
     }
 
+    #[func]
+    pub fn rotation(&self) -> Vector3 {
+        self.quaternion().to_euler(EulerOrder::XYZ)
+    }
+}
+
+impl S3DFragment for S3DActorInstance {
+    fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
+        self.fragment = Some(create_fragment_ref(wld.clone(), index));
+    }
+}
+
+impl S3DActorInstance {
     fn get_loc(&self) -> &Location {
         self.get_frag()
             .location
             .as_ref()
             .expect("ActorInstanceFragment should always have Location")
+    }
+
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+            .as_owner()
+    }
+
+    fn get_frag(&self) -> &ObjectLocationFragment {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get Fragment reference!")
     }
 }

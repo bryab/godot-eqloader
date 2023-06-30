@@ -1,12 +1,18 @@
-use crate::fragments::{EQFragmentUnknown, S3DFragment, S3DMaterial, S3DMesh};
+use crate::fragments::{
+    EQFragmentUnknown, S3DActorDef, S3DActorInstance, S3DFragment, S3DMaterial, S3DMesh,
+};
 use godot::engine::RefCounted;
 use godot::obj::cap::GodotInit;
 use godot::obj::dom::UserDomain;
 use godot::prelude::*;
-use libeq::wld::parser::{Fragment, FragmentType, MaterialFragment, MeshFragment, WldDoc};
+use libeq::wld::parser::{
+    Fragment, FragmentType, MaterialFragment, MeshFragment, ModelFragment, ObjectLocationFragment,
+    WldDoc,
+};
 use std::sync::Arc;
 
 /// Creates one of the GodotClass wrappers around the given Fragment
+// FIXME: I feel this should return Option - it should fail if the given index is not of the correct type.
 pub fn create_fragment<T: S3DFragment + GodotInit<Declarer = UserDomain>>(
     wld: &Arc<WldDoc>,
     index: u32,
@@ -71,6 +77,20 @@ impl S3DWld {
     #[func]
     pub fn get_materials(&self) -> Array<Gd<S3DMaterial>> {
         self.build_fragment_type_array::<S3DMaterial, MaterialFragment>()
+    }
+
+    /// Returns an Array of all the Meshes in the WLD
+    /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
+    #[func]
+    pub fn get_actordefs(&self) -> Array<Gd<S3DActorDef>> {
+        self.build_fragment_type_array::<S3DActorDef, ModelFragment>()
+    }
+
+    /// Returns an Array of all the Meshes in the WLD
+    /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
+    #[func]
+    pub fn get_actorinstances(&self) -> Array<Gd<S3DActorInstance>> {
+        self.build_fragment_type_array::<S3DActorInstance, ObjectLocationFragment>()
     }
 
     #[func]

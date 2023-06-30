@@ -2,6 +2,8 @@ mod actordef;
 mod actorinst;
 mod material;
 mod mesh;
+pub use actordef::*;
+pub use actorinst::*;
 use godot::engine::RefCounted;
 use godot::prelude::*;
 use libeq::wld::parser::{Fragment, WldDoc};
