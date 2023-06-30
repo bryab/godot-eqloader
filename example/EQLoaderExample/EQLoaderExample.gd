@@ -100,15 +100,31 @@ func load_zone(zone_name):
 	for actorinst in actorinst_wld.get_actorinstances():
 		var actorinst_node = build_actorinst(actorinst)
 		call_deferred("add_child", actorinst_node)
-		
+
+
+func get_texture(texture_filename: String) -> Texture:
+	return textures[texture_filename]
+	
+func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:
+	var texture_filenames = material_fragment.texture_filenames()
+	var num_textures = len(texture_filenames)
+	if num_textures > 1:
+		# If it's an animated texture, generate that texture and store it locally in the material
+		var anim = AnimatedTexture.new()
+		anim.frames = len(texture_filenames)
+		for i in range(num_textures):
+			anim.set_frame_texture(i, get_texture(texture_filenames[i]))
+			anim.set_frame_duration(i, 0.1) # FIXME: Where is this stored? Anywhere?
+		return anim
+	return get_texture(texture_filenames[0])
+
 func create_material(material_fragment: S3DMaterial, force_create = false) -> Material:
 	var material_name = material_fragment.name()
 	if not force_create and material_name in materials:
 		return materials[material_name]
-	var texture_filename = material_fragment.texture_filename()
-	var texture = textures[texture_filename]
 	
-	
+	var texture = get_texture_for_material(material_fragment)
+
 	var shader_type_id = material_fragment.shader_type_id()
 	# Note: I am just using standard material here but you'd need to provide different shaders for the various shader types: `material.shader_type_id()`
 	# Also note that the textures have metadata in them to identify the 'key color' for cutout transparency (not used in this example)
@@ -124,15 +140,19 @@ func create_material(material_fragment: S3DMaterial, force_create = false) -> Ma
 	materials[material_name] = material
 	return material
 
-func build_mesh(eqmesh: S3DMesh,) -> ArrayMesh:
+func build_mesh(eqmesh: S3DMesh, vertex_colors: PackedColorArray = []) -> ArrayMesh:
 	var arrays = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = eqmesh.vertices()
 	arrays[Mesh.ARRAY_NORMAL] = eqmesh.normals()
-	#if vertex_colors == null:
-	var vertex_colors = eqmesh.vertex_colors()
+	# ActorInstances have their own vertex_colors array.
 	if vertex_colors:
 		arrays[Mesh.ARRAY_COLOR] = vertex_colors
+	else:
+		# For zone meshes, use the vertex_colors that are part of the mesh.
+		vertex_colors = eqmesh.vertex_colors()
+		if vertex_colors:
+			arrays[Mesh.ARRAY_COLOR] = vertex_colors
 	var uvs = eqmesh.uvs()
 	if uvs:
 		arrays[Mesh.ARRAY_TEX_UV] = uvs
@@ -176,7 +196,7 @@ func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 	# Characters will have more than one (head and body) but those are handled differently than simple actors.
 	var eqmesh = actordef.meshes()[0]
 	# The mesh must be built for each instance, because each instance has different vertex colors.
-	var mesh = build_mesh(eqmesh)
+	var mesh = build_mesh(eqmesh, actorinst.vertex_colors())
 	
 	# First make the mesh and position it
 	var mesh_inst = MeshInstance3D.new()
