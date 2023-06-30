@@ -1,10 +1,16 @@
 extends Node3D
 
-var standard_shader: Shader = preload("res://shaders/eq_standard.gdshader")
+var shader_standard: Shader = preload("res://shaders/eq_standard.gdshader")
+var shader_add: Shader = preload("res://shaders/eq_additive.gdshader")
 var textures = {}
 var materials = {}
 var actordefs = {}
 
+func get_shader(shader_type_id: int) -> Shader:
+	if shader_type_id in [0x0B, 0x17]:
+		return shader_add
+	return shader_standard
+	
 func _ready():
 	var thread = Thread.new()
 	thread.start(load_random_zone)
@@ -101,14 +107,16 @@ func create_material(material_fragment: S3DMaterial, force_create = false) -> Ma
 		return materials[material_name]
 	var texture_filename = material_fragment.texture_filename()
 	var texture = textures[texture_filename]
-
+	
+	
+	var shader_type_id = material_fragment.shader_type_id()
 	# Note: I am just using standard material here but you'd need to provide different shaders for the various shader types: `material.shader_type_id()`
 	# Also note that the textures have metadata in them to identify the 'key color' for cutout transparency (not used in this example)
 	var material = ShaderMaterial.new()
 	material.set_name(material_name)
-	material.shader = standard_shader
+	material.shader = get_shader(shader_type_id)
 	material.set_shader_parameter("diffuse", texture)
-	material.set_shader_parameter("shader_type_id", material_fragment.shader_type_id())
+	material.set_shader_parameter("shader_type_id", shader_type_id)
 	# When the texture was first loaded, a metadata item was stored on it which, for cut-out transparent textures, is the color to be cut out.
 	# There is a problem at the moment where the color on the GPU in the shader is slightly different from this color,
 	# So in the shader I am allowing some wiggle room.
