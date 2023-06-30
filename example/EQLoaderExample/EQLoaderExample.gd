@@ -1,6 +1,6 @@
 extends Node3D
 
-var standard_shader: Shader = preload("res://eq_data/eq_standard.gdshader")
+var standard_shader: Shader = preload("res://shaders/eq_standard.gdshader")
 var textures = {}
 var materials = {}
 var actordefs = {}
