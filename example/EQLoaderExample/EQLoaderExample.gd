@@ -41,7 +41,7 @@ func get_all_zone_names():
 func load_random_zone():
 	var all_zones = get_all_zone_names()
 	var zone_name = all_zones.pick_random()
-	load_zone("oasis")
+	load_zone(zone_name)
 	
 func load_archive_textures(archive):
 	for filename in archive.get_filenames():
