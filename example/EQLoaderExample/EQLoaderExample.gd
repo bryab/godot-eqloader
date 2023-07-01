@@ -1,5 +1,6 @@
 extends Node3D
 
+var default_material = ShaderMaterial.new()
 var shader_standard: Shader = preload("res://shaders/eq_standard.gdshader")
 var shader_add: Shader = preload("res://shaders/eq_additive.gdshader")
 var textures = {}
@@ -40,7 +41,7 @@ func get_all_zone_names():
 func load_random_zone():
 	var all_zones = get_all_zone_names()
 	var zone_name = all_zones.pick_random()
-	load_zone(zone_name)
+	load_zone("oasis")
 	
 func load_archive_textures(archive):
 	for filename in archive.get_filenames():
@@ -109,7 +110,6 @@ func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:
 	var texture_filenames = material_fragment.texture_filenames()
 	var num_textures = len(texture_filenames)
 	if num_textures > 1:
-		# If it's an animated texture, generate that texture and store it locally in the material
 		var anim = AnimatedTexture.new()
 		anim.frames = len(texture_filenames)
 		for i in range(num_textures):
@@ -118,10 +118,14 @@ func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:
 		return anim
 	return get_texture(texture_filenames[0])
 
-func create_material(material_fragment: S3DMaterial, force_create = false) -> Material:
+func create_material(material_fragment: S3DMaterial) -> Material:
 	var material_name = material_fragment.name()
-	if not force_create and material_name in materials:
-		return materials[material_name]
+	
+	# For invisible materials, I am setting a null value.
+	# This is used later when building the mesh to skip polygons with this material.
+	if not material_fragment.visible():
+		materials[material_name] = null
+		return
 	
 	var texture = get_texture_for_material(material_fragment)
 
@@ -136,7 +140,8 @@ func create_material(material_fragment: S3DMaterial, force_create = false) -> Ma
 	# When the texture was first loaded, a metadata item was stored on it which, for cut-out transparent textures, is the color to be cut out.
 	# There is a problem at the moment where the color on the GPU in the shader is slightly different from this color,
 	# So in the shader I am allowing some wiggle room.
-	material.set_shader_parameter("key_color", texture.get_meta("key_color"))
+	if texture.has_meta("key_color"):
+		material.set_shader_parameter("key_color", texture.get_meta("key_color"))
 	materials[material_name] = material
 	return material
 
@@ -170,7 +175,16 @@ func build_mesh(eqmesh: S3DMesh, vertex_colors: PackedColorArray = []) -> ArrayM
 		var indices = face_material_group[1]
 		if len(indices) < 1:
 			continue
-		var material = materials[material_name]
+		var material: Material = null
+		if not material_name in materials:
+			push_error("Missing material: %s" % [material_name])
+			material = default_material
+		else:
+			material = materials[material_name]
+		if material == null:
+			# If material is null, it means it is invisible.
+			# Skip the polygons entirely.
+			continue
 
 		arrays[Mesh.ARRAY_INDEX] = indices
 		
