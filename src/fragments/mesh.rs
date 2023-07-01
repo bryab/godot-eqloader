@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{MeshFragment, WldDoc};
+use libeq::wld::parser::{MaterialFragment, MeshFragment, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -32,19 +32,6 @@ impl S3DMesh {
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),
         )
-    }
-
-    fn get_wld(&self) -> &Arc<WldDoc> {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get WLD reference!")
-            .as_owner()
-    }
-
-    fn get_frag(&self) -> &MeshFragment {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get Fragment reference!")
     }
 
     #[func]
@@ -123,20 +110,34 @@ impl S3DMesh {
             .collect()
     }
 
-    /// Returns an array of material groups.  Material groups are two-tuples.  The first element is the index of the material in the material list.  The second element is the array of indices for the polygons that use this material.
+    /// Returns an array of material groups.  
+    /// Material groups are two-tuples.  The first element is the name of the material.  
+    /// The second element is the array of indices for the polygons that use this material.
+    ///
+    /// Invisible materials are skipped entirely.
     #[func]
     pub fn face_material_groups(&self) -> Array<VariantArray> {
-        let material_names = self.material_names();
+        let wld = self.get_wld();
+        let materials = self.materials();
         let mut pos = 0;
         let frag = self.get_frag();
         frag.face_material_groups
             .iter()
             .enumerate()
-            .map(|(_, (poly_count, ref material_idx))| {
+            .filter_map(|(_, (poly_count, ref material_idx))| {
+                let material = materials[*material_idx as usize];
+
                 let count = *poly_count as usize;
                 let next_pos = pos + count;
                 let batch = pos..next_pos;
                 pos = next_pos;
+
+                // If the material flags are 0, this is an invisible material.
+                // Since we are dealing with collision separately, we can simply omit these polygons as they serve no purpose for rendering.
+                // FIXME: It may be desirable to keep these for debugging purposes.  It would be wise to provide a flag for this.
+                // if material.render_method.as_u32() == 0 {
+                //     return None;
+                // }
 
                 let indices: PackedInt32Array = frag
                     .faces
@@ -154,10 +155,11 @@ impl S3DMesh {
 
                 let mut array = VariantArray::new();
                 array.push(Variant::from(GodotString::from(
-                    material_names[*material_idx as usize],
+                    wld.get_string(material.name_reference)
+                        .expect("Material name should be a valid string"),
                 )));
                 array.push(Variant::from(indices));
-                array
+                return Some(array);
             })
             .collect()
     }
@@ -198,37 +200,32 @@ impl S3DMesh {
             })
             .collect()
     }
+}
 
-    /// Return S3DMaterials for all the materials used by this mesh.
-    /// This could be used to create Godot representations of these materials before attempting to build the mesh.
-    // #[func]
-    // pub fn materials(&self) -> Array<Gd<S3DMaterial>> {
-    //     let wld = self.get_wld();
-    //     wld.get(&self.get_frag().material_list_ref)
-    //         .expect("Invalid material list reference")
-    //         .fragments
-    //         .iter()
-    //         .filter_map(|fragment_ref| match fragment_ref {
-    //             FragmentRef::Index(index, _) => Some(create_fragment(wld, *index)),
-    //             FragmentRef::Name(_, _) => None,
-    //         })
-    //         .collect()
-    // }
-
-    /// The names of the materials used in the mesh.
-    /// Faces refer to this list
-    // # #[func]
-    fn material_names(&self) -> Vec<&str> {
+impl S3DMesh {
+    fn materials(&self) -> Vec<&MaterialFragment> {
         let wld = self.get_wld();
         wld.get(&self.get_frag().material_list_ref)
             .expect("Invalid material list reference")
             .fragments
             .iter()
-            .filter_map(|fragment_ref| {
+            .map(|fragment_ref| {
                 wld.get(fragment_ref)
-                    .and_then(|fragment| wld.get_string(fragment.name_reference))
-                //     .and_then(|s| Some(GodotString::from(s)))
+                    .expect("Material should exist - it's in the material list")
             })
             .collect()
+    }
+
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+            .as_owner()
+    }
+
+    fn get_frag(&self) -> &MeshFragment {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get Fragment reference!")
     }
 }
