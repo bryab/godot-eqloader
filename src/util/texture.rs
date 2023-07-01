@@ -11,8 +11,14 @@ use std::io::Cursor;
 pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
     let mut file = Cursor::new(bmp_data);
     let decoder = BmpDecoder::new(&mut file).map_err(|_| "Invalid bitmap data!")?;
-    let palette = decoder.get_palette().unwrap();
-    let key_color = palette[0];
+    let key_color = match decoder.get_palette() {
+        Some(palette) => Variant::from(Color::from_rgb(
+            palette[0][0] as f32 / 255.0,
+            palette[0][1] as f32 / 255.0,
+            palette[0][2] as f32 / 255.0,
+        )),
+        None => Variant::nil(),
+    };
     //godot_print!("Key color: {:?}", key_color);
     let bmp = DynamicImage::from_decoder(decoder).unwrap();
     // Note: EQ BMPs seem to have an unused alpha channel.  It is discarded here.
@@ -26,13 +32,6 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
     )
     .unwrap();
     let mut tex = ImageTexture::create_from_image(image).unwrap();
-    tex.set_meta(
-        StringName::from("key_color"),
-        Variant::from(Color::from_rgb(
-            key_color[0] as f32 / 255.0,
-            key_color[1] as f32 / 255.0,
-            key_color[2] as f32 / 255.0,
-        )),
-    );
+    tex.set_meta(StringName::from("key_color"), key_color);
     Ok(tex)
 }

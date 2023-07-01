@@ -91,6 +91,6 @@ func _physics_process(delta):
 
 func toggle_noclip():
 	noclip_mode = !noclip_mode
-	var collider = get_node("CollisionShape3d")
-	if collider:
-		collider.disabled = noclip_mode
+	# var collider = get_node("CollisionShape3d")
+	# if collider:
+	# 	collider.disabled = noclip_mode

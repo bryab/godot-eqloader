@@ -1,5 +1,6 @@
 use crate::fragments::{
     EQFragmentUnknown, S3DActorDef, S3DActorInstance, S3DFragment, S3DMaterial, S3DMesh,
+    S3DSkeleton,
 };
 use godot::engine::RefCounted;
 use godot::obj::cap::GodotInit;
@@ -7,7 +8,7 @@ use godot::obj::dom::UserDomain;
 use godot::prelude::*;
 use libeq::wld::parser::{
     Fragment, FragmentType, MaterialFragment, MeshFragment, ModelFragment, ObjectLocationFragment,
-    WldDoc,
+    SkeletonTrackSetFragment, WldDoc,
 };
 use std::sync::Arc;
 
@@ -72,25 +73,24 @@ impl S3DWld {
         self.build_fragment_type_array::<S3DMesh, MeshFragment>()
     }
 
-    /// Returns an Array of all the Meshes in the WLD
-    /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
     #[func]
     pub fn get_materials(&self) -> Array<Gd<S3DMaterial>> {
         self.build_fragment_type_array::<S3DMaterial, MaterialFragment>()
     }
 
-    /// Returns an Array of all the Meshes in the WLD
-    /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
     #[func]
     pub fn get_actordefs(&self) -> Array<Gd<S3DActorDef>> {
         self.build_fragment_type_array::<S3DActorDef, ModelFragment>()
     }
 
-    /// Returns an Array of all the Meshes in the WLD
-    /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
     #[func]
     pub fn get_actorinstances(&self) -> Array<Gd<S3DActorInstance>> {
         self.build_fragment_type_array::<S3DActorInstance, ObjectLocationFragment>()
+    }
+
+    #[func]
+    pub fn get_skeletons(&self) -> Array<Gd<S3DSkeleton>> {
+        self.build_fragment_type_array::<S3DSkeleton, SkeletonTrackSetFragment>()
     }
 
     #[func]

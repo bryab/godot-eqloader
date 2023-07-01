@@ -7,6 +7,8 @@ var textures = {}
 var materials = {}
 var actordefs = {}
 
+var library_lock = Mutex.new()
+
 func get_shader(shader_type_id: int) -> Shader:
 	if shader_type_id in [0x0B, 0x17]:
 		return shader_add
@@ -15,7 +17,10 @@ func get_shader(shader_type_id: int) -> Shader:
 func _ready():
 	var thread = Thread.new()
 	thread.start(load_random_zone)
+	var thread2 = Thread.new()
+	thread2.start(load_random_chr)
 	thread.wait_to_finish()
+	thread2.wait_to_finish()
 
 func get_eq_data_dir():
 	var eq_dir_locations = [OS.get_environment("EQDATA"), "res://eq_data"]
@@ -46,7 +51,9 @@ func load_random_zone():
 func load_archive_textures(archive):
 	for filename in archive.get_filenames():
 		if filename.ends_with(".bmp"):
+			library_lock.lock()
 			textures[filename] = archive.get_texture(filename)
+			library_lock.unlock()
 
 func load_wld_materials(wld):
 	for material in wld.get_materials():
@@ -142,7 +149,9 @@ func create_material(material_fragment: S3DMaterial) -> Material:
 	# So in the shader I am allowing some wiggle room.
 	if texture.has_meta("key_color"):
 		material.set_shader_parameter("key_color", texture.get_meta("key_color"))
+	library_lock.lock()
 	materials[material_name] = material
+	library_lock.unlock()
 	return material
 
 func build_mesh(eqmesh: S3DMesh, vertex_colors: PackedColorArray = []) -> ArrayMesh:
@@ -224,4 +233,41 @@ func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 	actorinst_node.position = actorinst.position()
 	actorinst_node.quaternion = actorinst.quaternion()
 	return actorinst_node
+
+
+func load_random_chr():
+	var s3d_name = "global_chr"
+	var eqdir = get_eq_data_dir()
+	var loader = EQArchiveLoader.new()
+	var archive: EQArchive = loader.load_archive("{0}/{1}.s3d".format([eqdir, s3d_name]))
+	
+	# First load all the textures and store them in a dictionary
+	load_archive_textures(archive)
+	
+	# Now get the chr WLD
+	var wld: S3DWld = archive.get_main_wld()
+	
+	# Load all the materials and store them in a dictionary
+	load_wld_materials(wld)
+	
+	var i = 0
+	for eqskel in wld.get_skeletons():
+		#print(eqskel)
+		var skeleton = eqskel.skeleton()
+		skeleton.position = Vector3(i*10, 0, 0)
+		i += 1
+		# Note: the skeleton must be added to the scene tree before assigning meshes to it.
+		# I feel this is a bug, but perhaps I am misunderstanding something.
+		call_deferred("add_child", skeleton)
+		for eqmesh in eqskel.meshes():
+			call_deferred("add_mesh_to_skeleton", eqmesh, skeleton)
+		# Note: The character will look broken until some kind of animation is applied to the skeleton.
+	
+func add_mesh_to_skeleton(eqmesh: S3DMesh, skeleton: Skeleton3D) -> Skeleton3D:
+	var mesh_inst = build_mesh_inst(eqmesh)
+	skeleton.add_child(mesh_inst)
+	mesh_inst.skeleton = skeleton.get_path()
+	return skeleton
+	
+	
 	

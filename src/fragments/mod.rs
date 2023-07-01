@@ -2,6 +2,7 @@ mod actordef;
 mod actorinst;
 mod material;
 mod mesh;
+mod skeleton;
 pub use actordef::*;
 pub use actorinst::*;
 use godot::engine::RefCounted;
@@ -10,6 +11,7 @@ use libeq::wld::parser::{Fragment, WldDoc};
 pub use material::*;
 pub use mesh::*;
 use owning_ref::ArcRef;
+pub use skeleton::*;
 use std::sync::Arc;
 
 /// Create a reference to a particular fragment by pairing it with its parent WLD in an OwnedRef.
