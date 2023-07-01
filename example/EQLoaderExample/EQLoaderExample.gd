@@ -114,7 +114,7 @@ func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:
 		anim.frames = len(texture_filenames)
 		for i in range(num_textures):
 			anim.set_frame_texture(i, get_texture(texture_filenames[i]))
-			anim.set_frame_duration(i, 0.1) # FIXME: Where is this stored? Anywhere?
+			anim.set_frame_duration(i, material_fragment.delay()) # FIXME: Where is this stored? Anywhere?
 		return anim
 	return get_texture(texture_filenames[0])
 

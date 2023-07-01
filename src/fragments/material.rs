@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{MaterialFragment, RenderMethod, WldDoc};
+use libeq::wld::parser::{MaterialFragment, RenderMethod, TextureFragment, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -69,19 +69,6 @@ impl S3DMaterial {
         )
     }
 
-    fn get_wld(&self) -> &Arc<WldDoc> {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get WLD reference!")
-            .as_owner()
-    }
-
-    fn get_frag(&self) -> &MaterialFragment {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get Fragment reference!")
-    }
-
     #[func]
     pub fn flags(&self) -> u32 {
         self.get_frag().flags
@@ -117,14 +104,33 @@ impl S3DMaterial {
             .expect("No texture filename in Texture")
     }
 
+    /// For animated textures, the delay between each frame in seconds
+    #[func]
+    fn delay(&self) -> f32 {
+        match self.get_simple_sprite().sleep {
+            Some(sleep) => sleep as f32 * 0.001,
+            None => 0.,
+        }
+    }
+}
+
+impl S3DMaterial {
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+            .as_owner()
+    }
+
+    fn get_frag(&self) -> &MaterialFragment {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get Fragment reference!")
+    }
+
     fn iter_texture_filenames(&self) -> impl Iterator<Item = GodotString> + '_ {
         let wld = self.get_wld();
-        let simplespriteref = wld
-            .get(&self.get_frag().reference)
-            .expect("Invalid TextureReference");
-        let simplesprite = wld
-            .get(&simplespriteref.reference)
-            .expect("Invalid SimpleSprite");
+        let simplesprite = self.get_simple_sprite();
         simplesprite
             .frame_references
             .iter()
@@ -142,5 +148,14 @@ impl S3DMaterial {
                     .collect::<Vec<_>>(),
                 None => vec![],
             })
+    }
+
+    fn get_simple_sprite(&self) -> &TextureFragment {
+        let wld = self.get_wld();
+        let simplespriteref = wld
+            .get(&self.get_frag().reference)
+            .expect("Invalid TextureReference");
+        wld.get(&simplespriteref.reference)
+            .expect("Invalid SimpleSprite")
     }
 }
