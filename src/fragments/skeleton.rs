@@ -174,48 +174,6 @@ impl S3DSkeleton {
             self.traverse_dag_tree(&dags[*dag_id as usize], dags, skel, bone_idx);
         }
     }
-
-    //     var actor_tag = hier_sprite.name.replace("_ACTORDEF","")
-    // 	var bone_name = EQUtil.bone_name_from_dag(actor_tag, dag.name)
-    // 	if bone_name == "":
-    // 		bone_name = "ROOT"
-    // 	#var bone_name = "%0d_%s" % [skeleton.get_bone_count(), dag.name] # NOTE: This just makes sure the bone has a unique name which is a requirement for Godot
-    // 	for i in skeleton.get_bone_count():
-    // 		if skeleton.get_bone_name(i) == bone_name:
-    // 			bone_name = "%s_2" % [bone_name]
-    // 			break
-
-    // 	skeleton.add_bone(bone_name)
-    // 	#dags_to_bones[dag.name] = bone_name
-    // 	var bone_idx = skeleton.get_bone_count() - 1
-    // 	assert(bone_idx != parent_idx, "Bone has same index as parent")
-    // 	var track_reference: EQTrackInstanceFragment = dag.track_reference
-    // 	var track: EQTrackFragment = track_reference.reference
-    // 	log_debug(track.name)
-    // 	var frames = track.frame_transforms
-    // 	#if len(frames) > 1:
-    // 	#	push_error("%s Frames: %d" % [track.name, len(frames)])
-    // 	#assert(len(frames) == 1, "Base animation has more than one frame")
-    // 	var frame: EQTrackFrame = frames[0]
-    // 	# NOTE - this is not really necessary to do (animation will override it)
-    // 	EmptyQ.set_bone_pose(skeleton, bone_idx, frame)
-
-    // 	if parent_idx > -1 and parent_idx != bone_idx:
-    // 		skeleton.set_bone_parent(bone_idx, parent_idx)
-
-    // 	if dag.mesh_or_sprite_reference:
-    // 		var mesh_reference: EQMeshInstanceFragment = dag.mesh_or_sprite_reference
-    // 		var mesh: EQMeshFragment = mesh_reference.reference
-    // 		var bone_attachment = BoneAttachment3D.new()
-    // 		bone_attachment.name = "BONE_%s" % [bone_name]
-    // 		bone_attachment.bone_name = bone_name
-    // 		var mesh_inst = EmptyQ.generate_mesh_instance(mesh)
-    // 		bone_attachment.add_child(mesh_inst)
-    // 		skeleton.add_child(bone_attachment)
-
-    // 	#log_debug("%s Dag %s" % [test, dag.name])
-    // 	for dag_id in dag.sub_dags:
-    // 		_traverse_dag_tree(hier_sprite.dags[dag_id], hier_sprite, skeleton, bone_idx)
 }
 
 fn bone_name_from_dag(actor_tag: &str, dag_name: &str) -> String {
