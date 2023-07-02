@@ -43,6 +43,14 @@ func get_all_zone_names():
 		names.append(zone_name)
 	return names
 
+func get_all_chr_names():
+	var eqdir = get_eq_data_dir()
+	var names = []
+	for filename in DirAccess.get_files_at(eqdir):
+		if filename.ends_with("_chr.s3d"):
+			names.append(filename.get_basename())
+	return names
+
 func get_random_zone_name():
 	return get_all_zone_names().pick_random()
 
@@ -236,8 +244,7 @@ func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 	return actorinst_node
 
 func load_random_chr():
-	var s3d_name = "%s_chr" % [get_random_zone_name()]
-	load_chr(s3d_name)
+	load_chr(get_all_chr_names().pick_random())
 
 func load_chr(s3d_name):
 	
@@ -281,6 +288,15 @@ func build_skeleton(eqskel: S3DSkeleton) -> Skeleton3D:
 	# First create all the bones
 	for bone in eqskel.bones():
 		var bone_name = bone.name()
+		# Quick fix - in Godot bones cannot have empty names
+		if bone_name == "":
+			bone_name = "ROOT"
+		# Quick fix - in Godot bones cannot have duplicate names
+		for i in skeleton.get_bone_count():
+			if skeleton.get_bone_name(i) == bone_name:
+				bone_name = "%s_2" % [bone_name]
+				break
+
 		skeleton.add_bone(bone_name)
 		
 		var mesh_attachment = bone.attachment()
@@ -296,9 +312,10 @@ func build_skeleton(eqskel: S3DSkeleton) -> Skeleton3D:
 	# Also set the rest pose
 	var bone_index = 0
 	for bone in eqskel.bones():
-		skeleton.set_bone_parent(bone_index, bone.parent_index())
-		skeleton.set_bone_pose_position(bone_index, bone.rest_position())
-		skeleton.set_bone_pose_rotation(bone_index, bone.rest_quaternion())
+		if bone.parent_index() >= 0:
+			skeleton.set_bone_parent(bone_index, bone.parent_index())
+			skeleton.set_bone_pose_position(bone_index, bone.rest_position())
+			skeleton.set_bone_pose_rotation(bone_index, bone.rest_quaternion())
 		bone_index += 1
 	
 	return skeleton

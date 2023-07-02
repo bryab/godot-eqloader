@@ -16,7 +16,7 @@ pub struct Bone {
     full_name: String,
     name: String,
     bone_index: u32,
-    parent_index: u32,
+    parent_index: i32,
     attachment_ref: u32,
     rest_position: Vector3,
     rest_quaternion: Quaternion,
@@ -51,7 +51,7 @@ impl S3DBone {
 
     /// The parent index of this bone
     #[func]
-    pub fn parent_index(&self) -> u32 {
+    pub fn parent_index(&self) -> i32 {
         self.bone().parent_index
     }
 
@@ -140,7 +140,7 @@ impl S3DSkeleton {
                     bone_index: index as u32,
                     full_name: String::from(dag_name),
                     name: bone_name,
-                    parent_index: 0,
+                    parent_index: -1,
                     attachment_ref: dag.mesh_or_sprite_reference,
                     rest_quaternion: frame_quaternion(&rest_frame),
                     rest_position: frame_position(&rest_frame),
@@ -152,7 +152,7 @@ impl S3DSkeleton {
 
         for (index, dag) in frag.dags.iter().enumerate() {
             for sub_dag in &dag.sub_dags {
-                bones[*sub_dag as usize].parent_index = index as u32;
+                bones[*sub_dag as usize].parent_index = index as i32;
             }
         }
 
