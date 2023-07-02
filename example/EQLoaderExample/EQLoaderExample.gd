@@ -288,11 +288,14 @@ func build_skeleton(eqskel: S3DSkeleton) -> Skeleton3D:
 			bone_attachment.add_child(mesh_inst)
 			skeleton.add_child(bone_attachment)
 		
-	
 	# Then setup parenting - because the parents must exist first.
+	# Also set the rest pose
 	var bone_index = 0
 	for bone in eqskel.bones():
 		skeleton.set_bone_parent(bone_index, bone.parent_index())
+		skeleton.set_bone_pose_position(bone_index, bone.rest_position())
+		skeleton.set_bone_pose_rotation(bone_index, bone.rest_quaternion())
+		bone_index += 1
 	
 	return skeleton
 		

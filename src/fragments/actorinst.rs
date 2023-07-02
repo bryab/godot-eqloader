@@ -4,7 +4,7 @@ use libeq::wld::parser::{Location, ObjectLocationFragment, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
-use crate::util::{u32_to_color, wld_f32_pos_to_gd, wld_rot_to_quat};
+use crate::util::{u32_to_color, wld_degrees_rot_to_quat, wld_f32_pos_to_gd};
 use owning_ref::ArcRef;
 
 #[derive(GodotClass)]
@@ -75,7 +75,7 @@ impl S3DActorInstance {
     #[func]
     pub fn quaternion(&self) -> Quaternion {
         let loc = self.get_loc();
-        wld_rot_to_quat(&(loc.rotate_x, loc.rotate_y, loc.rotate_z))
+        wld_degrees_rot_to_quat(loc.rotate_x, loc.rotate_y, loc.rotate_z)
     }
 
     #[func]

@@ -2,6 +2,7 @@ pub mod sound;
 pub mod texture;
 use godot::prelude::*;
 use std::f32::consts::PI;
+
 pub fn wld_f32_pos_to_gd(tup: &(f32, f32, f32)) -> Vector3 {
     Vector3::new(tup.0 * -1., tup.2, tup.1)
 }
@@ -14,15 +15,22 @@ pub fn wld_i16_pos_to_gd(p: &(i16, i16, i16), scale: f32) -> Vector3 {
     )
 }
 
-pub fn wld_rot_to_quat(rot: &(f32, f32, f32)) -> Quaternion {
+/// Converts a rotation expressed in Euler degrees, in X / 512, to a Godot Quaternion.
+/// This is the format used for ActorInstance rotations.
+pub fn wld_degrees_rot_to_quat(x: f32, y: f32, z: f32) -> Quaternion {
+    wld_radians_rot_to_quat(
+        x / 512. * 360.0 * PI / 180.,
+        y / 512. * 360.0 * PI / 180.,
+        z / 512. * 360.0 * PI / 180.,
+    )
+}
+
+/// Converts a rotation expressed in Euler radians to a Godot Quaternion
+pub fn wld_radians_rot_to_quat(x: f32, y: f32, z: f32) -> Quaternion {
     // The quaternion must be created with the native EQ XYZ first, due to rotation order.
 
     // FIXME: from_euler should be a static function (it is in GDScript)
-    let q = Quaternion::new(1., 1., 1., 1.).from_euler(Vector3::new(
-        rot.0 / 512. * 360.0 * PI / 180.,
-        rot.1 / 512. * 360.0 * PI / 180.,
-        rot.2 / 512. * 360.0 * PI / 180.,
-    ));
+    let q = Quaternion::new(1., 1., 1., 1.).from_euler(Vector3::new(x, y, z));
 
     // Then we flip axes
     // FIXME: This can probably be expressed without these two separate transformations
