@@ -11,6 +11,59 @@ use super::{create_fragment_ref, S3DFragment, S3DMesh};
 use crate::wld::create_fragment;
 use owning_ref::ArcRef;
 
+pub struct Bone {
+    raw_name: String,
+    name: String,
+    bone_index: u32,
+    parent_index: u32,
+    attachment_ref: u32,
+}
+#[derive(GodotClass)]
+#[class(init, base=RefCounted)]
+pub struct S3DBone {
+    #[base]
+    base: Base<RefCounted>,
+    _bone: Option<Bone>,
+}
+
+#[godot_api]
+impl S3DBone {
+    #[func]
+    pub fn name(&self) -> GodotString {
+        GodotString::from(&self.bone().name)
+    }
+
+    #[func]
+    pub fn raw_name(&self) -> GodotString {
+        GodotString::from(&self.bone().raw_name)
+    }
+
+    #[func]
+    pub fn bone_index(&self) -> u32 {
+        self.bone().bone_index
+    }
+
+    #[func]
+    pub fn parent_index(&self) -> u32 {
+        self.bone().parent_index
+    }
+
+    /// FIXME: This should get a GodotClass of the attached Mesh or other object
+    #[func]
+    pub fn attachment(&self) -> Variant {
+        Variant::nil()
+    }
+}
+
+impl S3DBone {
+    pub fn bone(&self) -> &Bone {
+        &self._bone.as_ref().unwrap()
+    }
+    pub fn load(&mut self, bone: Bone) {
+        self._bone = Some(bone);
+    }
+}
+
 #[derive(GodotClass)]
 #[class(init, base=RefCounted)]
 pub struct S3DSkeleton {
@@ -35,6 +88,52 @@ impl S3DSkeleton {
     #[func]
     pub fn tag(&self) -> GodotString {
         GodotString::from(self._tag())
+    }
+
+    #[func]
+    fn bones(&self) -> Array<Gd<S3DBone>> {
+        let wld = self.get_wld();
+        let frag = self.get_frag();
+
+        // First make a flat list of the bones
+
+        let mut bones: Vec<Bone> = frag
+            .dags
+            .iter()
+            .enumerate()
+            .map(|(index, dag)| {
+                let dag_name = wld
+                    .get_string(StringReference::new(dag.name_reference))
+                    .expect("Dag should have a name");
+                let bone_name = bone_name_from_dag(&self._tag(), &dag_name);
+                Bone {
+                    bone_index: index as u32,
+                    raw_name: String::from(dag_name),
+                    name: bone_name,
+                    parent_index: 0,
+                    attachment_ref: dag.mesh_or_sprite_reference,
+                }
+            })
+            .collect();
+
+        // Now set the parent_index of each bone
+
+        for (index, dag) in frag.dags.iter().enumerate() {
+            for sub_dag in &dag.sub_dags {
+                bones[*sub_dag as usize].parent_index = index as u32;
+            }
+        }
+
+        // Now convert to GodotClasses
+
+        bones
+            .into_iter()
+            .map(|bone| {
+                let mut gdbone = Gd::<S3DBone>::new_default();
+                gdbone.bind_mut().load(bone);
+                gdbone
+            })
+            .collect()
     }
 
     /// The meshes used by this Skeleton (usually a head and a body)
@@ -78,20 +177,6 @@ impl S3DSkeleton {
             })
             .collect()
     }
-
-    /// Generate a Skeleton3D from this EQ Skeleton
-    /// The bones will have generic names, so that animations from other characters can be used with it.
-    /// Any attachments are also created, but the referenced meshes are not instantiated.
-    #[func]
-    pub fn skeleton(&self) -> Gd<Skeleton3D> {
-        let frag = self.get_frag();
-        let mut skel = Skeleton3D::new_alloc();
-        let root_dag = &frag.dags[0];
-
-        self.traverse_dag_tree(&root_dag, &frag.dags, &mut skel, -1);
-
-        skel
-    }
 }
 
 impl S3DSkeleton {
@@ -115,64 +200,6 @@ impl S3DSkeleton {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")
-    }
-
-    /// A recursive function to traverse the DAG tree, creating bones along the way on the referenced skeleton.
-    fn traverse_dag_tree(
-        &self,
-        dag: &Dag,
-        dags: &Vec<Dag>,
-        skel: &mut Gd<Skeleton3D>,
-        parent_idx: i64,
-    ) {
-        let wld = self.get_wld();
-        let dag_name = wld
-            .get_string(StringReference::new(dag.name_reference))
-            .expect("Dag should have a name");
-        // The bone name is the name of the DAG with the actor's tag removed.
-        // This is important for retargeting animation onto a different actor - the skeleton must have generic bone names.
-        let mut bone_name = bone_name_from_dag(&self._tag(), &dag_name);
-        if bone_name == "" {
-            bone_name = String::from("ROOT");
-        }
-        // FIXME: Need to check if there is already a bone with this name.
-        skel.add_bone(GodotString::from(&bone_name));
-        let bone_idx = skel.get_bone_count() - 1;
-
-        let track_ref = wld
-            .get(&FragmentRef::<MobSkeletonPieceTrackReferenceFragment>::new(
-                dag.track_reference as i32,
-            ))
-            .expect("DAG should have a valid MobSkeletonPieceTrackReferenceFragment");
-        let track = wld
-            .get(&track_ref.reference)
-            .expect("SkeletonTrackSetReference should reference a SkeletonTrackSet");
-
-        let frames = &track.frame_transforms;
-        let frame = &frames[0];
-        if parent_idx > -1 && parent_idx != bone_idx {
-            skel.set_bone_parent(bone_idx, parent_idx);
-        }
-
-        if dag.mesh_or_sprite_reference > 0 {
-            // NOTE: This bone references a specific mesh, but since we are making a "vanilla skeleton" here
-            // I am not instantiating it
-            // This will have to be handled in some way...
-            let mesh_reference =
-                &FragmentRef::<MeshReferenceFragment>::new(dag.mesh_or_sprite_reference as i32);
-            let mut bone_attachment = BoneAttachment3D::new_alloc();
-            bone_attachment.set_name(GodotString::from(format!("BONE_{0}", &bone_name)));
-            bone_attachment.set_bone_name(GodotString::from(&bone_name));
-            skel.add_child(
-                bone_attachment.upcast(),
-                false,
-                InternalMode::INTERNAL_MODE_DISABLED,
-            );
-        }
-
-        for dag_id in &dag.sub_dags {
-            self.traverse_dag_tree(&dags[*dag_id as usize], dags, skel, bone_idx);
-        }
     }
 }
 

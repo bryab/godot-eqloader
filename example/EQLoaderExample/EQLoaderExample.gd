@@ -253,7 +253,7 @@ func load_random_chr():
 	var i = 0
 	for eqskel in wld.get_skeletons():
 		#print(eqskel)
-		var skeleton = eqskel.skeleton()
+		var skeleton = build_skeleton(eqskel)
 		skeleton.position = Vector3(i*10, 0, 0)
 		i += 1
 		# Note: the skeleton must be added to the scene tree before assigning meshes to it.
@@ -269,5 +269,31 @@ func add_mesh_to_skeleton(eqmesh: S3DMesh, skeleton: Skeleton3D) -> Skeleton3D:
 	mesh_inst.skeleton = skeleton.get_path()
 	return skeleton
 	
+
+func build_skeleton(eqskel: S3DSkeleton) -> Skeleton3D:
+	var skeleton = Skeleton3D.new()
 	
+	
+	# First create all the bones
+	for bone in eqskel.bones():
+		var bone_name = bone.name()
+		skeleton.add_bone(bone_name)
+		
+		var mesh_attachment = bone.attachment()
+		if mesh_attachment:
+			var bone_attachment = BoneAttachment3D.new()
+			bone_attachment.name = "BONE_%s" % [bone_name]
+			bone_attachment.bone_name = bone_name
+			var mesh_inst = build_mesh_inst(mesh_attachment)
+			bone_attachment.add_child(mesh_inst)
+			skeleton.add_child(bone_attachment)
+		
+	
+	# Then setup parenting - because the parents must exist first.
+	var bone_index = 0
+	for bone in eqskel.bones():
+		skeleton.set_bone_parent(bone_index, bone.parent_index())
+	
+	return skeleton
+		
 	
