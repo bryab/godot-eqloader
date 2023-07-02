@@ -42,41 +42,41 @@ impl S3DSkeleton {
     #[func]
     fn meshes(&self) -> Array<Gd<S3DMesh>> {
         let wld = self.get_wld();
-        let meshes = self.get_frag().dm_sprites.as_ref();
+        let meshes = match self.get_frag().dm_sprites.as_ref() {
+            Some(meshes) => meshes,
+            None => return Array::new(),
+        };
 
-        match meshes {
-            Some(meshes) => meshes
-                .iter()
-                .filter_map(|fragment_ref| {
-                    // This could be a MeshReference or something else.
-                    // We ignore everything except meshes.
-                    let fragment = wld
-                        .at(*fragment_ref as usize - 1)
-                        .expect("Fragment index should exist in wld");
-                    match &fragment {
-                        FragmentType::MeshReference(mesh_reference) => {
-                            // FIXME: MeshReferenceFragment can reference an AlternateMesh.
-                            // This occurs in global_chr, resulting in a panic in create_fragment
-                            // As a quick fix I am re-checking the actual type of the underlying index to make sure it's Mesh, not AlternateMesh
-                            match mesh_reference.reference {
-                                FragmentRef::Index(index, _) => {
-                                    let fragment = wld.at(index as usize - 1).unwrap();
-                                    match fragment {
-                                        FragmentType::Mesh(_) => {
-                                            Some(create_fragment::<S3DMesh>(wld, index))
-                                        }
-                                        _ => None,
+        meshes
+            .iter()
+            .filter_map(|fragment_ref| {
+                // This could be a MeshReference or something else.
+                // We ignore everything except meshes.
+                let fragment = wld
+                    .at(*fragment_ref as usize - 1)
+                    .expect("Fragment index should exist in wld");
+                match &fragment {
+                    FragmentType::MeshReference(mesh_reference) => {
+                        // FIXME: MeshReferenceFragment can reference an AlternateMesh.
+                        // This occurs in global_chr, resulting in a panic in create_fragment
+                        // As a quick fix I am re-checking the actual type of the underlying index to make sure it's Mesh, not AlternateMesh
+                        match mesh_reference.reference {
+                            FragmentRef::Index(index, _) => {
+                                let fragment = wld.at(index as usize - 1).unwrap();
+                                match fragment {
+                                    FragmentType::Mesh(_) => {
+                                        Some(create_fragment::<S3DMesh>(wld, index))
                                     }
+                                    _ => None,
                                 }
-                                FragmentRef::Name(_, _) => None,
                             }
+                            FragmentRef::Name(_, _) => None,
                         }
-                        _ => None,
                     }
-                })
-                .collect(),
-            None => Array::new(),
-        }
+                    _ => None,
+                }
+            })
+            .collect()
     }
 
     /// Generate a Skeleton3D from this EQ Skeleton
