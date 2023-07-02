@@ -43,10 +43,11 @@ func get_all_zone_names():
 		names.append(zone_name)
 	return names
 
+func get_random_zone_name():
+	return get_all_zone_names().pick_random()
+
 func load_random_zone():
-	var all_zones = get_all_zone_names()
-	var zone_name = all_zones.pick_random()
-	load_zone(zone_name)
+	load_zone(get_random_zone_name())
 	
 func load_archive_textures(archive):
 	for filename in archive.get_filenames():
@@ -234,9 +235,12 @@ func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 	actorinst_node.quaternion = actorinst.quaternion()
 	return actorinst_node
 
-
 func load_random_chr():
-	var s3d_name = "global_chr"
+	var s3d_name = "%s_chr" % [get_random_zone_name()]
+	load_chr(s3d_name)
+
+func load_chr(s3d_name):
+	
 	var eqdir = get_eq_data_dir()
 	var loader = EQArchiveLoader.new()
 	var archive: EQArchive = loader.load_archive("{0}/{1}.s3d".format([eqdir, s3d_name]))

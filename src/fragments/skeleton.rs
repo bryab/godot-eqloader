@@ -259,7 +259,7 @@ fn frame_quaternion(transform: &FrameTransform) -> Quaternion {
 
     wld_radians_rot_to_quat(
         transform.rotate_x_numerator as f32 / rotate_denominator,
-        transform.rotate_y_numerator as f32 / rotate_denominator,
+        transform.rotate_y_numerator as f32 / rotate_denominator * -1., // FIXME: Is this right?  Not sure why these transforms are flipped on the Y-axis, and actor instances aren't.
         transform.rotate_z_numerator as f32 / rotate_denominator,
     )
 }
