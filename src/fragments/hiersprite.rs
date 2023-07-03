@@ -364,9 +364,7 @@ impl S3DHierSprite {
                 // But since the final keyframe is a duplicate of the first, we must force the duration.
                 // It still may be useful to have that final keyframe for interpolation purposes - if the animation needs to be slowed down for example.
 
-                if anim.get_length() < duration {
-                    anim.set_length(duration);
-                }
+                anim.set_length(duration); // FIXME: This is getting run repeatedly for no reason
             }
         }
 
