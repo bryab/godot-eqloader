@@ -225,24 +225,24 @@ func build_mesh_inst(eqmesh: S3DMesh) -> MeshInstance3D:
 
 func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 	var actordef: S3DActorDef = actordefs[actorinst.actordef_name()]
-	# For this simple example just assume there's only one mesh.
-	# Characters will have more than one (head and body) but those are handled differently than simple actors.
-	var eqmesh = actordef.meshes()[0]
-	# The mesh must be built for each instance, because each instance has different vertex colors.
-	var mesh = build_mesh(eqmesh, actorinst.vertex_colors())
-	
-	# First make the mesh and position it
-	var mesh_inst = MeshInstance3D.new()
-	mesh_inst.mesh = mesh
-	mesh_inst.name = eqmesh.name()
-	mesh_inst.position = eqmesh.center()
-
-	# Now make an empty node for the actor, so that it can be positioned and scaled with the instance settings
+	# Make an empty node for the actor, so that it can be positioned and scaled with the instance settings
 	var actorinst_node = Node3D.new()
 	actorinst_node.name = "%s_INST" % [actordef.name()]
-	actorinst_node.add_child(mesh_inst)
 	actorinst_node.position = actorinst.position()
 	actorinst_node.quaternion = actorinst.quaternion()
+
+	for eqmesh in actordef.meshes():
+		# The mesh must be built for each instance, because each instance has different vertex colors.
+		var mesh = build_mesh(eqmesh, actorinst.vertex_colors())
+		
+		# First make the mesh and position it
+		var mesh_inst = MeshInstance3D.new()
+		mesh_inst.mesh = mesh
+		mesh_inst.name = eqmesh.name()
+		mesh_inst.position = eqmesh.center()
+		
+		actorinst_node.add_child(mesh_inst)
+	
 	return actorinst_node
 
 func load_random_chr():
@@ -297,12 +297,9 @@ func load_chr(s3d_name):
 		
 
 func play_random_animation(animation_player: AnimationPlayer):
-	if not len(animation_player.get_animation_list()) > 1:
-		print("No animations")
+	if not len(animation_player.get_animation_list()):
 		return
-	var random_anim_name = "REST"
-	while random_anim_name == "REST":
-		random_anim_name = animation_player.get_animation_list()[randi_range(1, len(animation_player.get_animation_list())) - 1]
+	var random_anim_name = animation_player.get_animation_list()[randi_range(0, len(animation_player.get_animation_list())) - 1]
 	
 	animation_player.play(random_anim_name)
 	
