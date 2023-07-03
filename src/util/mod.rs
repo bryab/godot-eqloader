@@ -34,7 +34,7 @@ pub fn wld_radians_rot_to_quat(x: f32, y: f32, z: f32) -> Quaternion {
 
     // Then we flip axes
     // FIXME: This can probably be expressed without these two separate transformations
-    Quaternion::new(-q.x, q.z, -q.y, q.w)
+    Quaternion::new(-q.x, q.z, -q.y, q.w).normalized()
 }
 
 // fn f32_tup_to_vec2(tup: &(f32, f32)) -> Vector2 {

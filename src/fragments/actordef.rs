@@ -4,7 +4,7 @@ use libeq::wld::parser::{FragmentRef, MeshReferenceFragment, ModelFragment, WldD
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
-use crate::wld::create_fragment;
+use crate::wld::gd_from_frag_type;
 use owning_ref::ArcRef;
 
 #[derive(GodotClass)]
@@ -57,7 +57,7 @@ impl S3DActorDef {
                     FragmentRef::<MeshReferenceFragment>::new(*fragment_ref as i32);
                 let mesh_reference = wld.get(&mesh_reference_ref)?;
                 match mesh_reference.reference {
-                    FragmentRef::Index(index, _) => Some(create_fragment::<S3DMesh>(wld, index)),
+                    FragmentRef::Index(index, _) => Some(gd_from_frag_type::<S3DMesh>(wld, index)),
                     FragmentRef::Name(_, _) => None,
                 }
             })

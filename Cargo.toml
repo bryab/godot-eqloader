@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 [dependencies]
 godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
 libeq = { git = "https://github.com/bryab/libeq", branch = "godot-eqloader" }
-image = { version="*", default-features = false, features=["bmp"]}
-wav = {version="*"}
-owning_ref = "*"
+image = { version="0.*", default-features = false, features=["bmp"]}
+wav = {version="1.*"}
+owning_ref = "0.*"

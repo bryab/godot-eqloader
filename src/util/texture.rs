@@ -24,8 +24,8 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
     // Note: EQ BMPs seem to have an unused alpha channel.  It is discarded here.
     let bmp = bmp.into_rgb8();
     let image = Image::create_from_data(
-        i64::from(bmp.width()),
-        i64::from(bmp.height()),
+        bmp.width() as i32,
+        bmp.height() as i32,
         false,
         Format::FORMAT_RGB8,
         PackedByteArray::from(bmp.into_raw().as_slice()),
