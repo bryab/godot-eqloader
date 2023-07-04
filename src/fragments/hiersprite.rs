@@ -274,6 +274,13 @@ impl S3DHierSprite {
 
         // For this reason, we construct our animations in parallel, looping over the DAGs rather than the animations.
 
+        // Get a cache of all Trackdefs beforehand - might speed things up a little.
+        // It would be better if this could be cached on the whole wld.
+
+        let all_trackdefs: Vec<&MobSkeletonPieceTrackFragment> = wld
+            .fragment_iter::<MobSkeletonPieceTrackFragment>()
+            .collect();
+
         for dag in &frag.dags {
             let rest_trackdef = self.get_dag_rest_trackdef(&dag);
             let rest_trackdef_name = wld.get_string(rest_trackdef.name_reference).unwrap();
@@ -282,8 +289,8 @@ impl S3DHierSprite {
                 .expect("Dag should have a name");
             let bone_name = bone_name_from_dag(&actor_tag, dag_name);
 
-            let matching_trackdefs: Vec<&MobSkeletonPieceTrackFragment> = wld
-                .fragment_iter::<MobSkeletonPieceTrackFragment>()
+            let matching_trackdefs: Vec<&&MobSkeletonPieceTrackFragment> = all_trackdefs
+                .iter()
                 .filter_map(|trackdef| {
                     let trackdef_name = wld
                         .get_string(trackdef.name_reference)
@@ -327,15 +334,6 @@ impl S3DHierSprite {
                 let frame_transforms = &dag_trackdef.frame_transforms;
 
                 let secs_per_frame: f64 = 0.1; // FIXME: 100 ms is the default, but it can be different - and this is in TRACK not TRACKDEF
-
-                // if anim.get_length() < duration {
-                //     godot_print!(
-                //         "Frames: {0}, Duration: {1}",
-                //         frame_transforms.len(),
-                //         duration
-                //     );
-
-                // }
 
                 for (frame_num, frame_transform) in frame_transforms.iter().enumerate() {
                     let frame_secs = frame_num as f64 * secs_per_frame;
