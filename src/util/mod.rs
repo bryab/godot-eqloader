@@ -3,10 +3,12 @@ pub mod texture;
 use godot::prelude::*;
 use std::f32::consts::PI;
 
+/// Convert a float32 position value expressed in EQ coordiantes into Godot coordinates
 pub fn wld_f32_pos_to_gd(tup: &(f32, f32, f32)) -> Vector3 {
     Vector3::new(tup.0 * -1., tup.2, tup.1)
 }
 
+/// Convert a int16 position value expressed in EQ coordiantes into Godot coordinates
 pub fn wld_i16_pos_to_gd(p: &(i16, i16, i16), scale: f32) -> Vector3 {
     Vector3::new(
         p.0 as f32 * scale * -1.,

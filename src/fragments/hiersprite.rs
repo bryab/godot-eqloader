@@ -10,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
-use crate::util::{wld_f32_pos_to_gd, wld_radians_rot_to_quat};
+use crate::util::wld_f32_pos_to_gd;
 use crate::wld::{gd_from_frag, gd_from_frag_type};
 use owning_ref::ArcRef;
 
@@ -360,7 +360,7 @@ impl S3DHierSprite {
 
                 // ALSO NOTE: Godot seems to automatically extend the duration of the animation if you add keys beyond it.
                 // But since the final keyframe is a duplicate of the first, we must force the duration.
-                // It still may be useful to have that final keyframe for interpolation purposes - if the animation needs to be slowed down for example.
+                // FIXME: This should probably only be done for looping animations.  One-offs likely require the final keyframe
 
                 anim.set_length(duration); // FIXME: This is getting run repeatedly for no reason
             }
