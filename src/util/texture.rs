@@ -5,12 +5,14 @@ use image::codecs::bmp::BmpDecoder;
 use image::DynamicImage;
 use std::io::Cursor;
 
-/// Loads raw BMP data of any format, converts to RGB8 if necessary, and creates ImageTexture
-/// Note this does a lossy conversion from 16bit to 8bit for some UI textures - but not sure it matters for Everquest.
+/// Creates an ImageTexture from the bytes representing a BMP file.
+/// The image is converted to RGB8 if it is a format that is unsupported in Godot.
 /// The "key color" for cutout transparency is the first color in the BMP palette.  This is stored as metadata in the Godot texture to be used later.
 pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
     let mut file = Cursor::new(bmp_data);
     let decoder = BmpDecoder::new(&mut file).map_err(|_| "Invalid bitmap data!")?;
+    // NOTE: It is not necessary to get the BMP palette except for images with cutout transparency.
+    // Possibly this operation should be optional if it is expensive, but it doesn't seem to be.
     let key_color = match decoder.get_palette() {
         Some(palette) => Variant::from(Color::from_rgb(
             palette[0][0] as f32 / 255.0,
@@ -19,19 +21,52 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
         )),
         None => Variant::nil(),
     };
-    //godot_print!("Key color: {:?}", key_color);
-    let bmp = DynamicImage::from_decoder(decoder).unwrap();
-    // Note: EQ BMPs seem to have an unused alpha channel.  It is discarded here.
-    let bmp = bmp.into_rgb8();
+    let bmp = DynamicImage::from_decoder(decoder).map_err(|_| "Failed to decode BMP data!")?;
+    let (width, height, image_format, buffer) = match bmp {
+        DynamicImage::ImageRgb8(buffer) => (
+            buffer.width(),
+            buffer.height(),
+            Format::FORMAT_RGB8,
+            buffer.into_raw(),
+        ),
+        DynamicImage::ImageRgba8(buffer) => (
+            buffer.width(),
+            buffer.height(),
+            Format::FORMAT_RGBA8,
+            buffer.into_raw(),
+        ),
+        _ => {
+            godot_warn!(
+                "Unsupported image type: {:?}  Converting image to RGB8",
+                bmp
+            );
+            let buffer = bmp.into_rgb8();
+            (
+                buffer.width(),
+                buffer.height(),
+                Format::FORMAT_RGB8,
+                buffer.into_raw(),
+            )
+        }
+    };
     let image = Image::create_from_data(
-        bmp.width() as i32,
-        bmp.height() as i32,
+        width as i32,
+        height as i32,
         false,
-        Format::FORMAT_RGB8,
-        PackedByteArray::from(bmp.into_raw().as_slice()),
+        image_format,
+        PackedByteArray::from(&buffer[..]),
     )
-    .unwrap();
-    let mut tex = ImageTexture::create_from_image(image).unwrap();
+    .ok_or_else(|| "Failed to create Godot Image from Image")?;
+    let mut tex = ImageTexture::create_from_image(image)
+        .ok_or_else(|| "Failed to create Godot ImageTexture from Godot Image")?;
     tex.set_meta(StringName::from("key_color"), key_color);
     Ok(tex)
 }
+
+// For testing only - load the BMP using Godot's build in BMP decoder.
+// This is much slower than using the image crate, in my tests.
+// fn tex_from_bmp_gd(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
+//     let mut image = Image::new();
+//     image.load_bmp_from_buffer(PackedByteArray::from(&bmp_data[..]));
+//     Ok(ImageTexture::create_from_image(image).unwrap())
+// }
