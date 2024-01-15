@@ -61,8 +61,8 @@ impl S3DFragment for S3DMaterial {
 #[godot_api]
 impl S3DMaterial {
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(
+    pub fn name(&self) -> GString {
+        GString::from(
             self.get_wld()
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),
@@ -98,7 +98,7 @@ impl S3DMaterial {
 
     /// The filename for the material's color texture.
     #[func]
-    fn texture_filename(&self) -> GodotString {
+    fn texture_filename(&self) -> GString {
         self.iter_texture_filenames()
             .nth(0)
             .expect("No texture filename in Texture")
@@ -128,7 +128,7 @@ impl S3DMaterial {
             .expect("Failed to get Fragment reference!")
     }
 
-    fn iter_texture_filenames(&self) -> impl Iterator<Item = GodotString> + '_ {
+    fn iter_texture_filenames(&self) -> impl Iterator<Item = GString> + '_ {
         let wld = self.get_wld();
         let simplesprite = self.get_simple_sprite();
         simplesprite
@@ -144,7 +144,7 @@ impl S3DMaterial {
                     .iter()
                     // These also seem to be stored in all caps. The s3d files however store
                     // filenames in lowercase. This accounts for that.
-                    .map(|e| GodotString::from(e.file_name.to_lowercase()))
+                    .map(|e| GString::from(e.file_name.to_lowercase()))
                     .collect::<Vec<_>>(),
                 None => vec![],
             })

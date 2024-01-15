@@ -32,7 +32,7 @@ pub fn wld_radians_rot_to_quat(x: f32, y: f32, z: f32) -> Quaternion {
     // The quaternion must be created with the native EQ XYZ first, due to rotation order.
 
     // FIXME: from_euler should be a static function (it is in GDScript)
-    let q = Quaternion::new(1., 1., 1., 1.).from_euler(Vector3::new(x, y, z));
+    let q = Quaternion::from_euler(Vector3::new(x, y, z));
 
     // Then we flip axes
     // FIXME: This can probably be expressed without these two separate transformations

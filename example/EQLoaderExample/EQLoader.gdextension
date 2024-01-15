@@ -1,10 +1,11 @@
 [configuration]
 entry_symbol = "gdext_rust_init"
+compatibility_minimum = "4.2"
 
 [libraries]
-linux.debug.64 = "res://../../target/debug/godot_eqloader.so"
-macos.debug.64 = "res://../../target/debug/godot_eqloader.dylib"
-windows.debug.64 = "res://../../target/debug/godot_eqloader.dll"
-linux.release.64 = "res://../../target/release/godot_eqloader.so"
-macos.release.64 = "res://../../target/release/godot_eqloader.dylib"
-windows.release.64 = "res://../../target/release/godot_eqloader.dll"
+linux.debug.x86_64 = "res://../../target/debug/godot_eqloader.so"
+linux.release.x86_64 = "res://../../target/release/godot_eqloader.so"
+macos.debug.x86_64 = "res://../../target/debug/godot_eqloader.dylib"
+macos.release.x86_64 = "res://../../target/release/godot_eqloader.dylib"
+windows.debug.x86_64 = "res://../../target/debug/godot_eqloader.dll"
+windows.release.x86_64 = "res://../../target/release/godot_eqloader.dll"

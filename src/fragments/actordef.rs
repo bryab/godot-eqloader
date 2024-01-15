@@ -25,8 +25,8 @@ impl S3DFragment for S3DActorDef {
 #[godot_api]
 impl S3DActorDef {
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(
+    pub fn name(&self) -> GString {
+        GString::from(
             self.get_wld()
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),

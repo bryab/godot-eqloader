@@ -26,8 +26,8 @@ impl S3DFragment for S3DMesh {
 #[godot_api]
 impl S3DMesh {
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(
+    pub fn name(&self) -> GString {
+        GString::from(
             self.get_wld()
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),
@@ -154,7 +154,7 @@ impl S3DMesh {
                     .collect();
 
                 let mut array = VariantArray::new();
-                array.push(Variant::from(GodotString::from(
+                array.push(Variant::from(GString::from(
                     wld.get_string(material.name_reference)
                         .expect("Material name should be a valid string"),
                 )));

@@ -41,14 +41,14 @@ pub struct S3DBone {
 impl S3DBone {
     /// The generic name of the bone, excluding the actor tag.
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(&self.bone().name)
+    pub fn name(&self) -> GString {
+        GString::from(&self.bone().name)
     }
 
     /// The full name of the bone, including the actor tag, from the original DAG
     #[func]
-    pub fn full_name(&self) -> GodotString {
-        GodotString::from(&self.bone().full_name)
+    pub fn full_name(&self) -> GString {
+        GString::from(&self.bone().full_name)
     }
 
     /// The bone index, which corresponds to the mesh bone weights
@@ -128,13 +128,13 @@ impl S3DFragment for S3DHierSprite {
 #[godot_api]
 impl S3DHierSprite {
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(self._name())
+    pub fn name(&self) -> GString {
+        GString::from(self._name())
     }
 
     #[func]
-    pub fn tag(&self) -> GodotString {
-        GodotString::from(self._tag())
+    pub fn tag(&self) -> GString {
+        GString::from(self._tag())
     }
 
     #[func]
@@ -155,7 +155,7 @@ impl S3DHierSprite {
                 let bone_name = bone_name_from_dag(&self._tag(), &dag_name);
 
                 let trackdef = self.get_dag_rest_trackdef(&dag);
-                let rest_frame = &trackdef.frame_transforms[0];
+                let rest_frame = &trackdef.frame_transforms.as_ref().unwrap()[0];
 
                 Bone {
                     bone_index: index as u32,
@@ -182,7 +182,7 @@ impl S3DHierSprite {
         bones
             .into_iter()
             .map(|bone| {
-                let mut gdbone = Gd::<S3DBone>::new_default();
+                let mut gdbone = Gd::<S3DBone>::default();
                 gdbone.bind_mut().load(&wld, bone);
                 gdbone
             })
@@ -240,7 +240,7 @@ impl S3DHierSprite {
     // Returns a dictionary, where keys are animation names and values are frame tranforms for each DAG
     #[func]
     pub fn animation_library(&self) -> Gd<AnimationLibrary> {
-        let mut library = AnimationLibrary::new();
+        let mut library = AnimationLibrary::new_gd();
         for (animation_name, animation) in self._animations() {
             library.add_animation(StringName::from(animation_name), animation);
         }
@@ -310,13 +310,13 @@ impl S3DHierSprite {
                     animation_name = String::from(REST_ANIMATION_NAME);
                 }
                 if !animations.contains_key(&animation_name) {
-                    let mut anim = Animation::new();
-                    anim.set_loop_mode(LoopMode::LOOP_LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to looping.
+                    let mut anim = Animation::new_gd();
+                    anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to looping.
                     animations.insert(animation_name.clone(), anim);
                 }
                 let anim = animations.get_mut(&animation_name).unwrap();
-                let pos_track_idx = anim.add_track(TrackType::TYPE_POSITION_3D);
-                let rot_track_idx = anim.add_track(TrackType::TYPE_ROTATION_3D);
+                let pos_track_idx = anim.add_track(TrackType::POSITION_3D);
+                let rot_track_idx = anim.add_track(TrackType::ROTATION_3D);
 
                 let bone_path = NodePath::from(format!("{0}:{1}", skeleton_path, bone_name));
                 anim.track_set_path(pos_track_idx, bone_path.clone());
@@ -328,10 +328,10 @@ impl S3DHierSprite {
                 anim.track_set_path(rot_track_idx, bone_path);
                 anim.track_set_interpolation_type(
                     rot_track_idx,
-                    InterpolationType::INTERPOLATION_LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
+                    InterpolationType::LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
                 );
 
-                let frame_transforms = &dag_trackdef.frame_transforms;
+                let frame_transforms = &dag_trackdef.frame_transforms.as_ref().unwrap();
 
                 let secs_per_frame: f64 = 0.1; // FIXME: 100 ms is the default, but it can be different - and this is in TRACK not TRACKDEF
 

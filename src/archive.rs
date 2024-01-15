@@ -27,13 +27,13 @@ impl EQArchive {
             .expect("The load() method must be called to initialize this class.")
             .filenames
             .iter()
-            .map(|s| GodotString::from(s))
+            .map(|s| GString::from(s))
             .collect()
     }
 
     /// Returns a Texture2D representation of the given bitmap filename
     #[func]
-    pub fn get_texture(&self, filename: GodotString) -> Option<Gd<ImageTexture>> {
+    pub fn get_texture(&self, filename: GString) -> Option<Gd<ImageTexture>> {
         let data = self._get(filename.to_string().as_str())?;
         tex_from_bmp(data)
             .map_err(|e| {
@@ -44,7 +44,7 @@ impl EQArchive {
 
     /// Returns a Sound representation of the given audio filename (WAV)
     #[func]
-    pub fn get_sound(&self, filename: GodotString) -> Option<Gd<AudioStreamWav>> {
+    pub fn get_sound(&self, filename: GString) -> Option<Gd<AudioStreamWav>> {
         let data = self._get(filename.to_string().as_str())?;
         sound_from_bytes(data)
             .map_err(|e| {
@@ -55,7 +55,7 @@ impl EQArchive {
 
     /// Returns an EQWld object representing a WLD file
     #[func]
-    pub fn get_wld(&self, filename: GodotString) -> Option<Gd<S3DWld>> {
+    pub fn get_wld(&self, filename: GString) -> Option<Gd<S3DWld>> {
         self._get_wld(filename.to_string().as_str())
     }
 
@@ -82,7 +82,7 @@ impl EQArchive {
     // FIXME: This should return Variant::nil() if the file does't exist.
     /// Returns a raw bytes representation of the given file
     #[func]
-    pub fn get_bytes(&self, filename: GodotString) -> PackedByteArray {
+    pub fn get_bytes(&self, filename: GString) -> PackedByteArray {
         let data = self
             ._get(filename.to_string().as_str())
             .or_else(|| Some(vec![]))
@@ -120,7 +120,7 @@ impl EQArchive {
     /// Returns an EQWld object representing a WLD file
     fn _get_wld(&self, filename: &str) -> Option<Gd<S3DWld>> {
         let data = self._get(filename)?;
-        let mut wld: Gd<S3DWld> = Gd::new_default();
+        let mut wld: Gd<S3DWld> = Gd::default();
         wld.bind_mut().load(data);
         Some(wld)
     }

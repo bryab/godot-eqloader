@@ -67,6 +67,9 @@ func load_random_zone():
 
 func load_chr(chr_name: String):
 	var actor_nodes = builder.load_chr(chr_name)
+	call_deferred("play_random_animations", actor_nodes)
+
+func play_random_animations(actor_nodes):
 	for actor_node in actor_nodes:
 		var animation_player: AnimationPlayer = actor_node.find_child("*_ANIM", true, false)
 		play_random_animation(animation_player)

@@ -26,13 +26,13 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
         DynamicImage::ImageRgb8(buffer) => (
             buffer.width(),
             buffer.height(),
-            Format::FORMAT_RGB8,
+            Format::RGB8,
             buffer.into_raw(),
         ),
         DynamicImage::ImageRgba8(buffer) => (
             buffer.width(),
             buffer.height(),
-            Format::FORMAT_RGBA8,
+            Format::RGBA8,
             buffer.into_raw(),
         ),
         _ => {
@@ -44,7 +44,7 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
             (
                 buffer.width(),
                 buffer.height(),
-                Format::FORMAT_RGB8,
+                Format::RGB8,
                 buffer.into_raw(),
             )
         }

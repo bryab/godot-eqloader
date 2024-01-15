@@ -12,9 +12,9 @@ pub struct EQArchiveLoader {
 impl EQArchiveLoader {
     /// Load an Everquest .s3d archive, returning an EQArchive object.
     #[func]
-    fn load_archive(&self, filename: GodotString) -> Gd<EQArchive> {
+    fn load_archive(&self, filename: GString) -> Gd<EQArchive> {
         let filename = String::from(ProjectSettings::singleton().globalize_path(filename));
-        let mut obj: Gd<EQArchive> = Gd::new_default();
+        let mut obj: Gd<EQArchive> = Gd::default();
         obj.bind_mut().load(&filename);
         obj
     }

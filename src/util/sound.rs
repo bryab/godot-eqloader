@@ -9,7 +9,7 @@ pub fn sound_from_bytes(data: Vec<u8>) -> Result<Gd<AudioStreamWav>, &'static st
     let (_, data) = wav::read(&mut file).map_err(|_| "Invalid WAV data!")?;
     match data {
         wav::BitDepth::Eight(d) => {
-            let mut wav = AudioStreamWav::new();
+            let mut wav = AudioStreamWav::new_gd();
             wav.set_format(audio_stream_wav::Format::FORMAT_8_BITS);
             wav.set_data(PackedByteArray::from(&d[..]));
             Ok(wav)

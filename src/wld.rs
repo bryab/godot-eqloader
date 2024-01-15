@@ -3,8 +3,8 @@ use crate::fragments::{
     S3DMesh,
 };
 use godot::engine::RefCounted;
-use godot::obj::cap::GodotInit;
-use godot::obj::dom::UserDomain;
+use godot::obj::cap::GodotDefault;
+use godot::obj::bounds::{MemRefCounted, DeclUser};
 use godot::prelude::*;
 use libeq::wld::parser::{
     Fragment, FragmentType, MaterialFragment, MeshFragment, ModelFragment, ObjectLocationFragment,
@@ -14,11 +14,11 @@ use std::sync::Arc;
 
 /// Attempts to create a S3D Godot class from the given fragment index - and assert it is of the given type.
 // FIXME: I feel this should return Option - it should fail if the given index is not of the correct type.
-pub fn gd_from_frag_type<T: S3DFragment + GodotInit<Declarer = UserDomain>>(
+pub fn gd_from_frag_type<T: S3DFragment + GodotDefault<Memory = MemRefCounted, Declarer = DeclUser>>(
     wld: &Arc<WldDoc>,
     index: u32,
 ) -> Gd<T> {
-    let mut obj = Gd::<T>::new_default();
+    let mut obj = Gd::<T>::default();
     obj.bind_mut().load(wld, index);
     obj
 }
@@ -64,7 +64,7 @@ impl S3DWld {
     }
 
     fn build_fragment_type_array<
-        T: S3DFragment + GodotInit<Declarer = UserDomain>,
+        T: S3DFragment + GodotDefault<Memory = MemRefCounted, Declarer = DeclUser>,
         T2: 'static + Fragment,
     >(
         &self,

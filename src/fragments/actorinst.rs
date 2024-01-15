@@ -19,8 +19,8 @@ pub struct S3DActorInstance {
 impl S3DActorInstance {
     // FIXME: This appears to be empty
     #[func]
-    pub fn name(&self) -> GodotString {
-        GodotString::from(
+    pub fn name(&self) -> GString {
+        GString::from(
             self.get_wld()
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),
@@ -28,8 +28,8 @@ impl S3DActorInstance {
     }
 
     #[func]
-    pub fn actordef_name(&self) -> GodotString {
-        GodotString::from(
+    pub fn actordef_name(&self) -> GString {
+        GString::from(
             self.get_wld()
                 .get_string(self.get_frag().actor_def_reference)
                 .expect("Failed to get string from WLD!"),
