@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{Location, ObjectLocationFragment, WldDoc};
+use libeq::wld::parser::{Location, Actor, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -12,7 +12,7 @@ use owning_ref::ArcRef;
 pub struct S3DActorInstance {
     #[base]
     base: Base<RefCounted>,
-    fragment: Option<ArcRef<WldDoc, ObjectLocationFragment>>,
+    fragment: Option<ArcRef<WldDoc, Actor>>,
 }
 
 #[godot_api]
@@ -40,7 +40,7 @@ impl S3DActorInstance {
     #[func]
     pub fn vertex_colors(&self) -> PackedColorArray {
         let wld = self.get_wld();
-        let reference = match wld.get(&self.get_frag().vertex_color_reference) {
+        let reference = match wld.get(&self.get_frag().vertex_color_reference.unwrap()) {
             Some(reference) => reference,
             None => {
                 return PackedColorArray::new(); // FIXME: Should return Variant::nil()
@@ -105,7 +105,7 @@ impl S3DActorInstance {
             .as_owner()
     }
 
-    fn get_frag(&self) -> &ObjectLocationFragment {
+    fn get_frag(&self) -> &Actor {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")

@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{MaterialFragment, RenderMethod, TextureFragment, WldDoc};
+use libeq::wld::parser::{MaterialDef, RenderMethod, SimpleSpriteDef, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -48,7 +48,7 @@ use owning_ref::ArcRef;
 pub struct S3DMaterial {
     #[base]
     base: Base<RefCounted>,
-    fragment: Option<ArcRef<WldDoc, MaterialFragment>>,
+    fragment: Option<ArcRef<WldDoc, MaterialDef>>,
 }
 
 impl S3DFragment for S3DMaterial {
@@ -122,7 +122,7 @@ impl S3DMaterial {
             .as_owner()
     }
 
-    fn get_frag(&self) -> &MaterialFragment {
+    fn get_frag(&self) -> &MaterialDef {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")
@@ -150,7 +150,7 @@ impl S3DMaterial {
             })
     }
 
-    fn get_simple_sprite(&self) -> &TextureFragment {
+    fn get_simple_sprite(&self) -> &SimpleSpriteDef {
         let wld = self.get_wld();
         let simplespriteref = wld
             .get(&self.get_frag().reference)

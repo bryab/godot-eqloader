@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{MaterialFragment, MeshFragment, WldDoc};
+use libeq::wld::parser::{MaterialDef, DmSpriteDef2, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -14,7 +14,7 @@ use owning_ref::ArcRef;
 pub struct S3DMesh {
     #[base]
     base: Base<RefCounted>,
-    fragment: Option<ArcRef<WldDoc, MeshFragment>>,
+    fragment: Option<ArcRef<WldDoc, DmSpriteDef2>>,
 }
 
 impl S3DFragment for S3DMesh {
@@ -203,7 +203,7 @@ impl S3DMesh {
 }
 
 impl S3DMesh {
-    fn materials(&self) -> Vec<&MaterialFragment> {
+    fn materials(&self) -> Vec<&MaterialDef> {
         let wld = self.get_wld();
         wld.get(&self.get_frag().material_list_ref)
             .expect("Invalid material list reference")
@@ -223,7 +223,7 @@ impl S3DMesh {
             .as_owner()
     }
 
-    fn get_frag(&self) -> &MeshFragment {
+    fn get_frag(&self) -> &DmSpriteDef2 {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")

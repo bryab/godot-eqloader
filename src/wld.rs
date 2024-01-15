@@ -7,8 +7,8 @@ use godot::obj::cap::GodotDefault;
 use godot::obj::bounds::{MemRefCounted, DeclUser};
 use godot::prelude::*;
 use libeq::wld::parser::{
-    Fragment, FragmentType, MaterialFragment, MeshFragment, ModelFragment, ObjectLocationFragment,
-    SkeletonTrackSetFragment, WldDoc,
+    Fragment, FragmentType, MaterialDef, DmSpriteDef2, ActorDef, Actor,
+    HierarchicalSpriteDef, WldDoc,
 };
 use std::sync::Arc;
 
@@ -33,13 +33,13 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
     };
 
     match fragment_type {
-        FragmentType::Mesh(_) => Variant::from(gd_from_frag_type::<S3DMesh>(wld, index)),
-        FragmentType::Material(_) => Variant::from(gd_from_frag_type::<S3DMaterial>(wld, index)),
-        FragmentType::Model(_) => Variant::from(gd_from_frag_type::<S3DActorDef>(wld, index)),
-        FragmentType::ObjectLocation(_) => {
+        FragmentType::DmSpriteDef2(_) => Variant::from(gd_from_frag_type::<S3DMesh>(wld, index)),
+        FragmentType::MaterialDef(_) => Variant::from(gd_from_frag_type::<S3DMaterial>(wld, index)),
+        FragmentType::ActorDef(_) => Variant::from(gd_from_frag_type::<S3DActorDef>(wld, index)),
+        FragmentType::Actor(_) => {
             Variant::from(gd_from_frag_type::<S3DActorInstance>(wld, index))
         }
-        FragmentType::SkeletonTrackSet(_) => {
+        FragmentType::HierarchicalSpriteDef(_) => {
             Variant::from(gd_from_frag_type::<S3DHierSprite>(wld, index))
         }
         _ => Variant::from(gd_from_frag_type::<EQFragmentUnknown>(wld, index)),
@@ -92,27 +92,27 @@ impl S3DWld {
     /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
     #[func]
     pub fn meshes(&self) -> Array<Gd<S3DMesh>> {
-        self.build_fragment_type_array::<S3DMesh, MeshFragment>()
+        self.build_fragment_type_array::<S3DMesh, DmSpriteDef2>()
     }
 
     #[func]
     pub fn materials(&self) -> Array<Gd<S3DMaterial>> {
-        self.build_fragment_type_array::<S3DMaterial, MaterialFragment>()
+        self.build_fragment_type_array::<S3DMaterial, MaterialDef>()
     }
 
     #[func]
     pub fn actordefs(&self) -> Array<Gd<S3DActorDef>> {
-        self.build_fragment_type_array::<S3DActorDef, ModelFragment>()
+        self.build_fragment_type_array::<S3DActorDef, ActorDef>()
     }
 
     #[func]
     pub fn actorinstances(&self) -> Array<Gd<S3DActorInstance>> {
-        self.build_fragment_type_array::<S3DActorInstance, ObjectLocationFragment>()
+        self.build_fragment_type_array::<S3DActorInstance, Actor>()
     }
 
     #[func]
     pub fn hiersprites(&self) -> Array<Gd<S3DHierSprite>> {
-        self.build_fragment_type_array::<S3DHierSprite, SkeletonTrackSetFragment>()
+        self.build_fragment_type_array::<S3DHierSprite, HierarchicalSpriteDef>()
     }
 
     #[func]

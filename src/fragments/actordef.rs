@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{FragmentRef, MeshReferenceFragment, ModelFragment, WldDoc};
+use libeq::wld::parser::{FragmentRef, DmSprite, ActorDef, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
@@ -12,7 +12,7 @@ use owning_ref::ArcRef;
 pub struct S3DActorDef {
     #[base]
     base: Base<RefCounted>,
-    fragment: Option<ArcRef<WldDoc, ModelFragment>>,
+    fragment: Option<ArcRef<WldDoc, ActorDef>>,
 }
 
 impl S3DFragment for S3DActorDef {
@@ -40,7 +40,7 @@ impl S3DActorDef {
             .as_owner()
     }
 
-    fn get_frag(&self) -> &ModelFragment {
+    fn get_frag(&self) -> &ActorDef {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")
@@ -54,7 +54,7 @@ impl S3DActorDef {
             .iter()
             .filter_map(|fragment_ref| {
                 let mesh_reference_ref =
-                    FragmentRef::<MeshReferenceFragment>::new(*fragment_ref as i32);
+                    FragmentRef::<DmSprite>::new(*fragment_ref as i32);
                 let mesh_reference = wld.get(&mesh_reference_ref)?;
                 match mesh_reference.reference {
                     FragmentRef::Index(index, _) => Some(gd_from_frag_type::<S3DMesh>(wld, index)),

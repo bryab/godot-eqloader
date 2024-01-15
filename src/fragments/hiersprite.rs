@@ -3,8 +3,8 @@ use godot::engine::animation::{InterpolationType, LoopMode, TrackType};
 use godot::engine::{Animation, AnimationLibrary, RefCounted};
 use godot::prelude::*;
 use libeq::wld::parser::{
-    Dag, FragmentRef, FragmentType, FrameTransform, MobSkeletonPieceTrackFragment,
-    MobSkeletonPieceTrackReferenceFragment, SkeletonTrackSetFragment, StringReference, WldDoc,
+    Dag, FragmentRef, FragmentType, FrameTransform, TrackDef,
+    Track, HierarchicalSpriteDef, StringReference, WldDoc,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -116,7 +116,7 @@ impl S3DBone {
 pub struct S3DHierSprite {
     #[base]
     base: Base<RefCounted>,
-    fragment: Option<ArcRef<WldDoc, SkeletonTrackSetFragment>>,
+    fragment: Option<ArcRef<WldDoc, HierarchicalSpriteDef>>,
 }
 
 impl S3DFragment for S3DHierSprite {
@@ -208,7 +208,7 @@ impl S3DHierSprite {
                     .at(*fragment_ref as usize - 1)
                     .expect("Fragment index should exist in wld");
                 match &fragment {
-                    FragmentType::MeshReference(mesh_reference) => {
+                    FragmentType::DmSprite(mesh_reference) => {
                         // FIXME: MeshReferenceFragment can reference an AlternateMesh.
                         // This occurs in global_chr, resulting in a panic in create_fragment
                         // As a quick fix I am re-checking the actual type of the underlying index to make sure it's Mesh, not AlternateMesh
@@ -216,7 +216,7 @@ impl S3DHierSprite {
                             FragmentRef::Index(index, _) => {
                                 let fragment = wld.at(index as usize - 1).unwrap();
                                 match fragment {
-                                    FragmentType::Mesh(_) => {
+                                    FragmentType::DmSpriteDef2(_) => {
                                         Some(gd_from_frag_type::<S3DMesh>(wld, index))
                                     }
                                     _ => None,
@@ -277,8 +277,8 @@ impl S3DHierSprite {
         // Get a cache of all Trackdefs beforehand - might speed things up a little.
         // It would be better if this could be cached on the whole wld.
 
-        let all_trackdefs: Vec<&MobSkeletonPieceTrackFragment> = wld
-            .fragment_iter::<MobSkeletonPieceTrackFragment>()
+        let all_trackdefs: Vec<&TrackDef> = wld
+            .fragment_iter::<TrackDef>()
             .collect();
 
         for dag in &frag.dags {
@@ -289,7 +289,7 @@ impl S3DHierSprite {
                 .expect("Dag should have a name");
             let bone_name = bone_name_from_dag(&actor_tag, dag_name);
 
-            let matching_trackdefs: Vec<&&MobSkeletonPieceTrackFragment> = all_trackdefs
+            let matching_trackdefs: Vec<&&TrackDef> = all_trackdefs
                 .iter()
                 .filter_map(|trackdef| {
                     let trackdef_name = wld
@@ -385,7 +385,7 @@ impl S3DHierSprite {
             .as_owner()
     }
 
-    fn get_frag(&self) -> &SkeletonTrackSetFragment {
+    fn get_frag(&self) -> &HierarchicalSpriteDef {
         self.fragment
             .as_ref()
             .expect("Failed to get Fragment reference!")
@@ -393,13 +393,13 @@ impl S3DHierSprite {
 
     /// Each DAG will reference the animation track for the rest-pose animation.
     /// Return that trackdef
-    fn get_dag_rest_trackdef(&self, dag: &Dag) -> &MobSkeletonPieceTrackFragment {
+    fn get_dag_rest_trackdef(&self, dag: &Dag) -> &TrackDef {
         let wld = self.get_wld();
         let track_ref = wld
-            .get(&FragmentRef::<MobSkeletonPieceTrackReferenceFragment>::new(
+            .get(&FragmentRef::<Track>::new(
                 dag.track_reference as i32,
             ))
-            .expect("DAG should have a valid MobSkeletonPieceTrackReferenceFragment");
+            .expect("DAG should have a valid Track");
         wld.get(&track_ref.reference)
             .expect("SkeletonTrackSetReference should reference a SkeletonTrackSet")
     }
