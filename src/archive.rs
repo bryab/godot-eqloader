@@ -1,9 +1,9 @@
 use crate::util::sound::sound_from_bytes;
 use crate::util::texture::tex_from_bmp;
 use crate::wld::S3DWld;
+use libeq::archive::EqArchive;
 use godot::engine::{AudioStreamWav, ImageTexture, RefCounted};
 use godot::prelude::*;
-use libeq::archive::EqArchiveReader;
 use std::fs::File;
 use std::path::Path;
 
@@ -12,7 +12,7 @@ use std::path::Path;
 pub struct EQArchive {
     #[base]
     base: Base<RefCounted>,
-    archive: Option<EqArchiveReader>,
+    archive: Option<EqArchive>,
     /// The file stem of the archive, e.g. "rivervale".  This is used to get the main WLD out of the archive without specifying its name.
     name: String,
 }
@@ -25,9 +25,8 @@ impl EQArchive {
         self.archive
             .as_ref()
             .expect("The load() method must be called to initialize this class.")
-            .filenames
             .iter()
-            .map(|s| GString::from(s))
+            .map(|(s,_)| GString::from(s))
             .collect()
     }
 
@@ -99,8 +98,9 @@ impl EQArchive {
         let file = File::open(&filename)
             .map_err(|e| godot_error!("Failed to open archive: {filename}: {e}"))
             .unwrap();
+
         self.archive = Some(
-            EqArchiveReader::new(file)
+            EqArchive::read(file)
                 .map_err(|e| godot_error!("Failed to parse S3D archive: {filename}: {e:?}"))
                 .unwrap(),
         );
@@ -112,9 +112,10 @@ impl EQArchive {
         self.archive
             .as_ref()
             .expect("The load() method must be called to initialize this class.")
-            .get(filename)
-            .map_err(|e| godot_error!("Failed to get {filename} from archive: {e:?}"))
-            .ok()
+            .iter()
+            .find(|(name, _)| name == &filename)
+            .or_else(|| { godot_error!("{filename} not found in from archive"); None })
+            .and_then(|(_, data)| Some(data.clone()))
     }
 
     /// Returns an EQWld object representing a WLD file

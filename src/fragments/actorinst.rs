@@ -40,7 +40,7 @@ impl S3DActorInstance {
     #[func]
     pub fn vertex_colors(&self) -> PackedColorArray {
         let wld = self.get_wld();
-        let reference = match wld.get(&self.get_frag().vertex_color_reference.unwrap()) {
+        let reference = match wld.get(&self.get_frag().vertex_color_reference.as_ref().unwrap()) {
             Some(reference) => reference,
             None => {
                 return PackedColorArray::new(); // FIXME: Should return Variant::nil()
