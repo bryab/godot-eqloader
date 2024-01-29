@@ -3,7 +3,7 @@ use godot::engine::animation::{InterpolationType, LoopMode, TrackType};
 use godot::engine::{Animation, AnimationLibrary, RefCounted};
 use godot::prelude::*;
 use libeq::wld::parser::{
-    Dag, FragmentRef, FragmentType, FrameTransform, TrackDef,
+    Dag, FragmentRef, FragmentType, FrameTransform,
     Track, HierarchicalSpriteDef, StringReference, WldDoc,
 };
 use std::collections::HashMap;
@@ -154,7 +154,8 @@ impl S3DHierSprite {
                     .expect("Dag should have a name");
                 let bone_name = bone_name_from_dag(&self._tag(), &dag_name);
 
-                let trackdef = self.get_dag_rest_trackdef(&dag);
+                let track = self.get_dag_rest_track(&dag);
+                let trackdef = wld.get(&track.reference).unwrap();
                 let rest_frame = &trackdef.frame_transforms.as_ref().unwrap()[0];
 
                 Bone {
@@ -274,44 +275,47 @@ impl S3DHierSprite {
 
         // For this reason, we construct our animations in parallel, looping over the DAGs rather than the animations.
 
-        // Get a cache of all Trackdefs beforehand - might speed things up a little.
+        // Get a cache of all Tracks beforehand - might speed things up a little.
         // It would be better if this could be cached on the whole wld.
 
-        let all_trackdefs: Vec<&TrackDef> = wld
-            .fragment_iter::<TrackDef>()
-            .collect();
+        let all_tracks: Vec<&Track> = wld.fragment_iter::<Track>().collect();
 
         for dag in &frag.dags {
-            let rest_trackdef = self.get_dag_rest_trackdef(&dag);
-            let rest_trackdef_name = wld.get_string(rest_trackdef.name_reference).unwrap();
+            let rest_track = self.get_dag_rest_track(&dag);
+            let rest_track_name = wld.get_string(rest_track.name_reference).unwrap();
             let dag_name = wld
                 .get_string(StringReference::new(dag.name_reference))
                 .expect("Dag should have a name");
             let bone_name = bone_name_from_dag(&actor_tag, dag_name);
 
-            let matching_trackdefs: Vec<&&TrackDef> = all_trackdefs
+            let matching_tracks: Vec<&&Track> = all_tracks
                 .iter()
-                .filter_map(|trackdef| {
+                .filter_map(|track| {
                     let trackdef_name = wld
-                        .get_string(trackdef.name_reference)
-                        .expect("TRACKDEFs should have names");
-                    if trackdef_name.ends_with(rest_trackdef_name) {
-                        Some(trackdef)
+                        .get_string(track.name_reference)
+                        .expect("TRACKs should have names");
+                    if trackdef_name.ends_with(rest_track_name) {
+                        Some(track)
                     } else {
                         None
                     }
                 })
                 .collect();
 
-            for dag_trackdef in matching_trackdefs {
-                let dag_trackdef_name = wld.get_string(dag_trackdef.name_reference).unwrap();
-                let mut animation_name = dag_trackdef_name.replace(rest_trackdef_name, "");
+            for dag_track in matching_tracks {
+                let dag_track_name = wld.get_string(dag_track.name_reference).unwrap();
+                
+                //let dag_trackdef_name = wld.get_string(dag_trackdef.name_reference).unwrap();
+                let mut animation_name = dag_track_name.replace(rest_track_name, "");
                 if animation_name == "" {
                     animation_name = String::from(REST_ANIMATION_NAME);
                 }
                 if !animations.contains_key(&animation_name) {
                     let mut anim = Animation::new_gd();
-                    anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to looping.
+                    if !(dag_track.flags.interpolate()) {
+                        godot_error!("Track no interpolate: {}", dag_track_name);
+                    }
+                    anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
                     animations.insert(animation_name.clone(), anim);
                 }
                 let anim = animations.get_mut(&animation_name).unwrap();
@@ -330,10 +334,12 @@ impl S3DHierSprite {
                     rot_track_idx,
                     InterpolationType::LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
                 );
-
+                
+                let dag_trackdef = wld.get(&dag_track.reference).unwrap();
                 let frame_transforms = &dag_trackdef.frame_transforms.as_ref().unwrap();
 
-                let secs_per_frame: f64 = 0.1; // FIXME: 100 ms is the default, but it can be different - and this is in TRACK not TRACKDEF
+                let sleep = dag_track.sleep.unwrap_or(100); // 100 ms is the default - sometimes this is explicit, sometimes it is not.
+                let secs_per_frame: f64 = sleep as f64 * 0.001;
 
                 for (frame_num, frame_transform) in frame_transforms.iter().enumerate() {
                     let frame_secs = frame_num as f64 * secs_per_frame;
@@ -353,16 +359,11 @@ impl S3DHierSprite {
                 // For this reason we cannot set the duration on the first DAG we find, but rather make sure it's as long
                 // As the longest DAG animation.
 
-                // NOTE: The final keyframe in the animation seems to always be a duplicate of the first keyframe (sometimes with some errors)
-                // For this reason, the duration should be one frame shorter.
-
-                let duration = (frame_transforms.len() - 1) as f32 * secs_per_frame as f32;
-
-                // ALSO NOTE: Godot seems to automatically extend the duration of the animation if you add keys beyond it.
-                // But since the final keyframe is a duplicate of the first, we must force the duration.
-                // FIXME: This should probably only be done for looping animations.  One-offs likely require the final keyframe
-
-                anim.set_length(duration); // FIXME: This is getting run repeatedly for no reason
+                let duration = frame_transforms.len() as f32 * secs_per_frame as f32;
+                
+                if anim.get_length() < duration {
+                    anim.set_length(duration);
+                }
             }
         }
 
@@ -393,15 +394,14 @@ impl S3DHierSprite {
 
     /// Each DAG will reference the animation track for the rest-pose animation.
     /// Return that trackdef
-    fn get_dag_rest_trackdef(&self, dag: &Dag) -> &TrackDef {
+    fn get_dag_rest_track(&self, dag: &Dag) -> &Track {
         let wld = self.get_wld();
-        let track_ref = wld
+        wld
             .get(&FragmentRef::<Track>::new(
                 dag.track_reference as i32,
             ))
-            .expect("DAG should have a valid Track");
-        wld.get(&track_ref.reference)
-            .expect("SkeletonTrackSetReference should reference a SkeletonTrackSet")
+            .expect("DAG should have a valid Track")
+    
     }
 }
 
