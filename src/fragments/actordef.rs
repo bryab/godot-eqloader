@@ -19,6 +19,7 @@ impl S3DFragment for S3DActorDef {
     fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
         self.fragment = Some(create_fragment_ref(wld.clone(), index));
     }
+    
 }
 
 /// The S3DMaterial object simplifies the Materials and Textures system in S3D files, flattening it into something that is easy to use in Godot.
@@ -29,21 +30,17 @@ impl S3DActorDef {
         GString::from(
             self.get_wld()
                 .get_string(self.get_frag().name_reference)
-                .expect("Failed to get string from WLD!"),
+                .expect("Failed to get string from WLD!")
         )
     }
 
-    fn get_wld(&self) -> &Arc<WldDoc> {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get WLD reference!")
-            .as_owner()
-    }
-
-    fn get_frag(&self) -> &ActorDef {
-        self.fragment
-            .as_ref()
-            .expect("Failed to get Fragment reference!")
+    #[func]
+    fn callback_name(&self) -> GString {
+        GString::from(
+            self.get_wld()
+            .get_string(self.get_frag().callback_name_reference)
+            .expect("Failed to get string from WLD!")
+        )
     }
 
     #[func]
@@ -62,5 +59,21 @@ impl S3DActorDef {
                 }
             })
             .collect()
+    }
+}
+
+impl S3DActorDef {
+
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+            .as_owner()
+    }
+
+    fn get_frag(&self) -> &ActorDef {
+        self.fragment
+            .as_ref()
+            .expect("Failed to get Fragment reference!")
     }
 }
