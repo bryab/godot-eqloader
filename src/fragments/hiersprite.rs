@@ -3,8 +3,8 @@ use godot::engine::animation::{InterpolationType, LoopMode, TrackType};
 use godot::engine::{Animation, AnimationLibrary, RefCounted};
 use godot::prelude::*;
 use libeq::wld::parser::{
-    Dag, FragmentRef, FragmentType, FrameTransform,
-    Track, HierarchicalSpriteDef, StringReference, WldDoc,
+    Dag, FragmentRef, FragmentType, FrameTransform, HierarchicalSpriteDef, MaterialDef,
+    StringReference, Track, WldDoc,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -247,6 +247,24 @@ impl S3DHierSprite {
         }
         library
     }
+
+    // Returns a list of material names that correspond to this actor, for different skin variations
+    #[func]
+    pub fn skin_material_names(&self) -> PackedStringArray {
+        let actor_tag = self._tag();
+        let wld = self.get_wld();
+
+        wld.fragment_iter::<MaterialDef>()
+            .filter_map(|material| {
+                let name = wld.get_string(material.name_reference).unwrap();
+                if name.starts_with(&actor_tag) {
+                    Some(GString::from(name))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 impl S3DHierSprite {
@@ -304,7 +322,7 @@ impl S3DHierSprite {
 
             for dag_track in matching_tracks {
                 let dag_track_name = wld.get_string(dag_track.name_reference).unwrap();
-                
+
                 //let dag_trackdef_name = wld.get_string(dag_trackdef.name_reference).unwrap();
                 let mut animation_name = dag_track_name.replace(rest_track_name, "");
                 if animation_name == "" {
@@ -334,7 +352,7 @@ impl S3DHierSprite {
                     rot_track_idx,
                     InterpolationType::LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
                 );
-                
+
                 let dag_trackdef = wld.get(&dag_track.reference).unwrap();
                 let frame_transforms = &dag_trackdef.frame_transforms.as_ref().unwrap();
 
@@ -360,7 +378,7 @@ impl S3DHierSprite {
                 // As the longest DAG animation.
 
                 let duration = frame_transforms.len() as f32 * secs_per_frame as f32;
-                
+
                 if anim.get_length() < duration {
                     anim.set_length(duration);
                 }
@@ -396,12 +414,8 @@ impl S3DHierSprite {
     /// Return that trackdef
     fn get_dag_rest_track(&self, dag: &Dag) -> &Track {
         let wld = self.get_wld();
-        wld
-            .get(&FragmentRef::<Track>::new(
-                dag.track_reference as i32,
-            ))
+        wld.get(&FragmentRef::<Track>::new(dag.track_reference as i32))
             .expect("DAG should have a valid Track")
-    
     }
 }
 
