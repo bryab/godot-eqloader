@@ -333,6 +333,7 @@ impl S3DHierSprite {
                     if !(dag_track.flags.interpolate()) {
                         godot_error!("Track no interpolate: {}", dag_track_name);
                     }
+                    anim.set_length(0.); // Default length is 1 second.  Set to 0, as we calculate length later.
                     anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
                     animations.insert(animation_name.clone(), anim);
                 }
