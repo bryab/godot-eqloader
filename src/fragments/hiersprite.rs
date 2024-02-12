@@ -1,17 +1,19 @@
-use godot::engine::animation::{InterpolationType, LoopMode, TrackType};
+use godot::engine::animation::{InterpolationType, TrackType};
 
 use godot::engine::{Animation, AnimationLibrary, RefCounted};
 use godot::prelude::*;
-use libeq::wld::parser::{
-    Dag, FragmentRef, FragmentType, FrameTransform, HierarchicalSpriteDef, MaterialDef,
-    StringReference, Track, WldDoc,
+use libeq_wld::parser::{
+    Dag, FragmentRef, FragmentType, FrameTransform, HierarchicalSpriteDef, LegacyFrameTransform,
+    MaterialDef, StringReference, Track, TrackDef, WldDoc,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
 extern crate owning_ref;
+#[cfg(feature = "serde")]
+use super::frag_to_dict;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
 use crate::util::wld_f32_pos_to_gd;
-use crate::wld::{gd_from_frag, gd_from_frag_type};
+use crate::wld::gd_from_frag;
 use owning_ref::ArcRef;
 
 /// The rest animation is unnamed in the EQ data.  We need to give it a name.
@@ -29,9 +31,8 @@ pub struct Bone {
     rest_quaternion: Quaternion,
 }
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DBone {
-    #[base]
     base: Base<RefCounted>,
     _bone: Option<Bone>,
     wld: Option<Arc<WldDoc>>,
@@ -73,26 +74,13 @@ impl S3DBone {
         self.bone().rest_quaternion
     }
 
-    /// If there is an attachment, return it as a Godot class reprsentation of the fragment.  It is usually a Mesh.
+    /// If there is an attachment, return it as a Godot class reprsentation of the fragment.  It is usually a MeshReference
     #[func]
     pub fn attachment(&self) -> Variant {
         if self.bone().attachment_ref > 0 {
             gd_from_frag(self.wld.as_ref().unwrap(), self.bone().attachment_ref)
         } else {
             Variant::nil()
-        }
-    }
-
-    /// If there is an attachment and it is a Mesh, return a S3DMesh
-    #[func]
-    pub fn attachment_mesh(&self) -> Option<Gd<S3DMesh>> {
-        if self.bone().attachment_ref > 0 {
-            Some(gd_from_frag_type::<S3DMesh>(
-                self.wld.as_ref().unwrap(),
-                self.bone().attachment_ref,
-            ))
-        } else {
-            None
         }
     }
 }
@@ -112,9 +100,8 @@ impl S3DBone {
 ///
 /// With this class you can build a character's skeleton, meshes and animations.
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DHierSprite {
-    #[base]
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, HierarchicalSpriteDef>>,
 }
@@ -125,6 +112,21 @@ impl S3DFragment for S3DHierSprite {
     }
 }
 
+fn parse_frame_transform(trackdef: &TrackDef, index: usize) -> (Quaternion, Vector3) {
+    match &trackdef.frame_transforms {
+        Some(frame_transforms) => {
+            let rest_frame = &frame_transforms[index];
+            (frame_quaternion(&rest_frame), frame_position(&rest_frame))
+        }
+        None => {
+            let rest_frame = &trackdef.legacy_frame_transforms.as_ref().unwrap()[index];
+            (
+                legacy_frame_quaternion(&rest_frame),
+                legacy_frame_position(&rest_frame),
+            )
+        }
+    }
+}
 #[godot_api]
 impl S3DHierSprite {
     #[func]
@@ -148,25 +150,25 @@ impl S3DHierSprite {
             .dags
             .iter()
             .enumerate()
-            .map(|(index, dag)| {
+            .filter_map(|(index, dag)| {
                 let dag_name = wld
                     .get_string(StringReference::new(dag.name_reference))
                     .expect("Dag should have a name");
                 let bone_name = bone_name_from_dag(&self._tag(), &dag_name);
 
                 let track = self.get_dag_rest_track(&dag);
-                let trackdef = wld.get(&track.reference).unwrap();
-                let rest_frame = &trackdef.frame_transforms.as_ref().unwrap()[0];
+                let trackdef = wld.get(&track.reference)?;
+                let (rest_quaternion, rest_position) = parse_frame_transform(trackdef, 0);
 
-                Bone {
+                Some(Bone {
                     bone_index: index as u32,
                     full_name: String::from(dag_name),
                     name: bone_name,
                     parent_index: -1,
                     attachment_ref: dag.mesh_or_sprite_reference,
-                    rest_quaternion: frame_quaternion(&rest_frame),
-                    rest_position: frame_position(&rest_frame),
-                }
+                    rest_quaternion,
+                    rest_position,
+                })
             })
             .collect();
 
@@ -210,23 +212,12 @@ impl S3DHierSprite {
                     .expect("Fragment index should exist in wld");
                 match &fragment {
                     FragmentType::DmSprite(mesh_reference) => {
-                        // FIXME: MeshReferenceFragment can reference an AlternateMesh.
-                        // This occurs in global_chr, resulting in a panic in create_fragment
-                        // As a quick fix I am re-checking the actual type of the underlying index to make sure it's Mesh, not AlternateMesh
-                        match mesh_reference.reference {
-                            FragmentRef::Index(index, _) => {
-                                let fragment = wld.at(index as usize - 1).unwrap();
-                                match fragment {
-                                    FragmentType::DmSpriteDef2(_) => {
-                                        Some(gd_from_frag_type::<S3DMesh>(wld, index))
-                                    }
-                                    _ => None,
-                                }
-                            }
-                            FragmentRef::Name(_, _) => None,
-                        }
+                        S3DMesh::from_reference(wld, mesh_reference)
                     }
-                    _ => None,
+                    _ => {
+                        godot_print!("Hiersprite references a non-mesh: {:?}", fragment);
+                        None
+                    }
                 }
             })
             .collect()
@@ -264,6 +255,14 @@ impl S3DHierSprite {
                 }
             })
             .collect()
+    }
+
+    #[cfg(feature = "serde")]
+    #[func]
+    pub fn as_dict(&self) -> Dictionary {
+        let frag = self.get_frag();
+        let wld = self.get_wld();
+        frag_to_dict(wld, frag)
     }
 }
 
@@ -334,7 +333,7 @@ impl S3DHierSprite {
                         godot_error!("Track no interpolate: {}", dag_track_name);
                     }
                     anim.set_length(0.); // Default length is 1 second.  Set to 0, as we calculate length later.
-                    anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
+                                         //anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
                     animations.insert(animation_name.clone(), anim);
                 }
                 let anim = animations.get_mut(&animation_name).unwrap();
@@ -354,31 +353,26 @@ impl S3DHierSprite {
                     InterpolationType::LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
                 );
 
-                let dag_trackdef = wld.get(&dag_track.reference).unwrap();
-                let frame_transforms = &dag_trackdef.frame_transforms.as_ref().unwrap();
+                let dag_trackdef = wld
+                    .get(&dag_track.reference)
+                    .expect("TRACK should reference TRACKDEF");
 
                 let sleep = dag_track.sleep.unwrap_or(100); // 100 ms is the default - sometimes this is explicit, sometimes it is not.
                 let secs_per_frame: f64 = sleep as f64 * 0.001;
 
-                for (frame_num, frame_transform) in frame_transforms.iter().enumerate() {
-                    let frame_secs = frame_num as f64 * secs_per_frame;
-                    anim.position_track_insert_key(
-                        pos_track_idx,
-                        frame_secs,
-                        frame_position(frame_transform),
-                    );
-                    anim.rotation_track_insert_key(
-                        rot_track_idx,
-                        frame_secs,
-                        frame_quaternion(frame_transform),
-                    );
+                for frame_index in 0..dag_trackdef.frame_count {
+                    let (rotation, position) =
+                        parse_frame_transform(&dag_trackdef, frame_index as usize);
+                    let frame_secs = frame_index as f64 * secs_per_frame;
+                    anim.position_track_insert_key(pos_track_idx, frame_secs, position);
+                    anim.rotation_track_insert_key(rot_track_idx, frame_secs, rotation);
                 }
 
                 // NOTE: Some tracks of the animation will be shorter than others, or have only a single keyframe.
                 // For this reason we cannot set the duration on the first DAG we find, but rather make sure it's as long
                 // As the longest DAG animation.
 
-                let duration = frame_transforms.len() as f32 * secs_per_frame as f32;
+                let duration = dag_trackdef.frame_count as f32 * secs_per_frame as f32;
 
                 if anim.get_length() < duration {
                     anim.set_length(duration);
@@ -448,6 +442,28 @@ fn frame_quaternion(transform: &FrameTransform) -> Quaternion {
         transform.rotate_z_numerator as f32,
         transform.rotate_y_numerator as f32,
         transform.rotate_denominator as f32,
+    )
+    .normalized()
+}
+
+fn legacy_frame_position(transform: &LegacyFrameTransform) -> Vector3 {
+    if transform.shift_denominator == 0. {
+        return Vector3::ZERO;
+    }
+    let shift_denominator = transform.shift_denominator;
+    wld_f32_pos_to_gd(&(
+        transform.shift_x_numerator / shift_denominator,
+        transform.shift_y_numerator / shift_denominator,
+        transform.shift_z_numerator / shift_denominator,
+    ))
+}
+
+fn legacy_frame_quaternion(transform: &LegacyFrameTransform) -> Quaternion {
+    Quaternion::new(
+        transform.rotate_x * -1.,
+        transform.rotate_z,
+        transform.rotate_y,
+        transform.rotate_w,
     )
     .normalized()
 }

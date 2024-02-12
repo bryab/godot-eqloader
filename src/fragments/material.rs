@@ -1,11 +1,12 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{MaterialDef, RenderMethod, SimpleSpriteDef, WldDoc};
+use libeq_wld::parser::{MaterialDef, RenderMethod, SimpleSpriteDef, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
 use owning_ref::ArcRef;
-
+#[cfg(feature = "serde")]
+use super::frag_to_dict;
 // FIXME: Enums are not yet supported in gdext rust.  For now just handle in GDScript
 /// Source: LanternExtractor
 /// (https://github.com/LanternEQ/LanternExtractor/blob/afe174b71ac9f9ab75e259bac2282735b093426d/LanternExtractor/EQ/Wld/DataTypes/MaterialType.cs)
@@ -44,9 +45,8 @@ use owning_ref::ArcRef;
 // }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DMaterial {
-    #[base]
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, MaterialDef>>,
 }
@@ -112,6 +112,16 @@ impl S3DMaterial {
             None => 0.,
         }
     }
+
+    #[cfg(feature = "serde")]
+    #[func]
+    pub fn as_dict(&self) -> Dictionary {
+        let frag = self.get_frag();
+        let wld = self.get_wld();
+        frag_to_dict(wld, frag)
+    } 
+    
+    
 }
 
 impl S3DMaterial {

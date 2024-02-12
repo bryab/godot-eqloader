@@ -3,18 +3,20 @@ use crate::fragments::{
     S3DMesh,
 };
 use godot::engine::RefCounted;
+use godot::obj::bounds::{DeclUser, MemRefCounted};
 use godot::obj::cap::GodotDefault;
-use godot::obj::bounds::{MemRefCounted, DeclUser};
 use godot::prelude::*;
-use libeq::wld::parser::{
-    Fragment, FragmentType, MaterialDef, DmSpriteDef2, ActorDef, Actor,
-    HierarchicalSpriteDef, WldDoc,
+use libeq_wld::parser::{
+    Actor, ActorDef, DmSpriteDef2, Fragment, FragmentType, HierarchicalSpriteDef,
+    MaterialDef, WldDoc,
 };
 use std::sync::Arc;
 
 /// Attempts to create a S3D Godot class from the given fragment index - and assert it is of the given type.
 // FIXME: I feel this should return Option - it should fail if the given index is not of the correct type.
-pub fn gd_from_frag_type<T: S3DFragment + GodotDefault<Memory = MemRefCounted, Declarer = DeclUser>>(
+pub fn gd_from_frag_type<
+    T: S3DFragment + GodotDefault<Memory = MemRefCounted, Declarer = DeclUser>,
+>(
     wld: &Arc<WldDoc>,
     index: u32,
 ) -> Gd<T> {
@@ -33,12 +35,16 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
     };
 
     match fragment_type {
+        FragmentType::DmSprite(mesh_reference) => {
+            match S3DMesh::from_reference(wld, mesh_reference) {
+                Some(mesh) => Variant::from(mesh),
+                None => Variant::nil(),
+            }
+        }
         FragmentType::DmSpriteDef2(_) => Variant::from(gd_from_frag_type::<S3DMesh>(wld, index)),
         FragmentType::MaterialDef(_) => Variant::from(gd_from_frag_type::<S3DMaterial>(wld, index)),
         FragmentType::ActorDef(_) => Variant::from(gd_from_frag_type::<S3DActorDef>(wld, index)),
-        FragmentType::Actor(_) => {
-            Variant::from(gd_from_frag_type::<S3DActorInstance>(wld, index))
-        }
+        FragmentType::Actor(_) => Variant::from(gd_from_frag_type::<S3DActorInstance>(wld, index)),
         FragmentType::HierarchicalSpriteDef(_) => {
             Variant::from(gd_from_frag_type::<S3DHierSprite>(wld, index))
         }
@@ -47,9 +53,8 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
 }
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DWld {
-    #[base]
     base: Base<RefCounted>,
     wld: Option<Arc<WldDoc>>,
 }
@@ -92,7 +97,18 @@ impl S3DWld {
     /// This should really only be used for Zone WLDS; for objects, characters etc you should get get_actors
     #[func]
     pub fn meshes(&self) -> Array<Gd<S3DMesh>> {
-        self.build_fragment_type_array::<S3DMesh, DmSpriteDef2>()
+        let wld = self.wld.as_ref().unwrap();
+        wld.iter()
+            .enumerate()
+            .filter_map(|(index, fragment)| {
+                match fragment.as_ref() {
+                    FragmentType::DmSpriteDef(_) => Some(gd_from_frag_type(wld, index as u32 + 1)),
+                    FragmentType::DmSpriteDef2(_) => Some(gd_from_frag_type(wld, index as u32 + 1)),
+                    _ => None
+
+                }
+            })
+            .collect()
     }
 
     #[func]

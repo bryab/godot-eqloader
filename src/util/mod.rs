@@ -39,22 +39,6 @@ pub fn wld_radians_rot_to_quat(x: f32, y: f32, z: f32) -> Quaternion {
     Quaternion::new(-q.x, q.z, -q.y, q.w).normalized()
 }
 
-// fn f32_tup_to_vec2(tup: &(f32, f32)) -> Vector2 {
-//     Vector2::new(tup.0, tup.1)
-// }
-
-// fn i16_tup_to_vec3(tup: &(i16, i16, i16)) -> Vector3 {
-//     Vector3::new(tup.0 as f32, tup.1 as f32, tup.2 as f32)
-// }
-
-// fn i8_tup_to_vec3(tup: &(i8, i8, i8)) -> Vector3 {
-//     Vector3::new(tup.0 as f32, tup.1 as f32, tup.2 as f32)
-// }
-
-// fn i16_tup_to_vec2(tup: &(i16, i16)) -> Vector2 {
-//     Vector2::new(tup.0 as f32, tup.1 as f32)
-// }
-
 /// Convert an RGBA color value from u32 to Color
 pub fn u32_to_color(num: &u32) -> Color {
     let red = (((num >> 24) & 0xff) as f32) / 255.0; // red

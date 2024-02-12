@@ -5,10 +5,10 @@ use image::codecs::bmp::BmpDecoder;
 use image::DynamicImage;
 use std::io::Cursor;
 
-/// Creates an ImageTexture from the bytes representing a BMP file.
+/// Creates an Image from the bytes representing a BMP file.
 /// The image is converted to RGB8 if it is a format that is unsupported in Godot.
 /// The "key color" for cutout transparency is the first color in the BMP palette.  This is stored as metadata in the Godot texture to be used later.
-pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
+pub fn image_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
     let mut file = Cursor::new(bmp_data);
     let decoder = BmpDecoder::new(&mut file).map_err(|_| "Invalid bitmap data!")?;
     // NOTE: It is not necessary to get the BMP palette except for images with cutout transparency.
@@ -49,7 +49,7 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
             )
         }
     };
-    let image = Image::create_from_data(
+    let mut image = Image::create_from_data(
         width as i32,
         height as i32,
         false,
@@ -57,6 +57,16 @@ pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str>
         PackedByteArray::from(&buffer[..]),
     )
     .ok_or_else(|| "Failed to create Godot Image from Image")?;
+    image.set_meta(StringName::from("key_color"), key_color);
+    Ok(image)
+}
+
+/// Creates an ImageTexture from the bytes representing a BMP file.
+/// The image is converted to RGB8 if it is a format that is unsupported in Godot.
+/// The "key color" for cutout transparency is the first color in the BMP palette.  This is stored as metadata in the Godot image to be used later.
+pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
+    let image = image_from_bmp(bmp_data)?;
+    let key_color = image.get_meta("key_color".into());
     let mut tex = ImageTexture::create_from_image(image)
         .ok_or_else(|| "Failed to create Godot ImageTexture from Godot Image")?;
     tex.set_meta(StringName::from("key_color"), key_color);

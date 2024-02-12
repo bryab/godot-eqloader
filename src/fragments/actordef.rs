@@ -1,16 +1,16 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{FragmentRef, DmSprite, ActorDef, WldDoc};
+use libeq_wld::parser::{FragmentRef, DmSprite, ActorDef, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
-use crate::wld::gd_from_frag_type;
 use owning_ref::ArcRef;
+#[cfg(feature = "serde")]
+use super::frag_to_dict;
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DActorDef {
-    #[base]
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, ActorDef>>,
 }
@@ -53,12 +53,18 @@ impl S3DActorDef {
                 let mesh_reference_ref =
                     FragmentRef::<DmSprite>::new(*fragment_ref as i32);
                 let mesh_reference = wld.get(&mesh_reference_ref)?;
-                match mesh_reference.reference {
-                    FragmentRef::Index(index, _) => Some(gd_from_frag_type::<S3DMesh>(wld, index)),
-                    FragmentRef::Name(_, _) => None,
-                }
+                S3DMesh::from_reference(wld, mesh_reference)
+                
             })
             .collect()
+    }
+
+    #[cfg(feature = "serde")]
+    #[func]
+    pub fn as_dict(&self) -> Dictionary {
+        let frag = self.get_frag();
+        let wld = self.get_wld();
+        frag_to_dict(wld, frag)
     }
 }
 

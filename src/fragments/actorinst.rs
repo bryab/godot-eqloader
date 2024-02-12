@@ -1,16 +1,17 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq::wld::parser::{Location, Actor, WldDoc};
+use libeq_wld::parser::{Location, Actor, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
 use crate::util::{u32_to_color, wld_degrees_rot_to_quat, wld_f32_pos_to_gd};
 use owning_ref::ArcRef;
+#[cfg(feature = "serde")]
+use super::frag_to_dict;
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct S3DActorInstance {
-    #[base]
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, Actor>>,
 }
@@ -81,6 +82,14 @@ impl S3DActorInstance {
     #[func]
     pub fn rotation(&self) -> Vector3 {
         self.quaternion().to_euler(EulerOrder::XYZ)
+    }
+
+    #[cfg(feature = "serde")]
+    #[func]
+    pub fn as_dict(&self) -> Dictionary {
+        let frag = self.get_frag();
+        let wld = self.get_wld();
+        frag_to_dict(wld, frag)
     }
 }
 

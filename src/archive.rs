@@ -1,16 +1,15 @@
 use crate::util::sound::sound_from_bytes;
-use crate::util::texture::tex_from_bmp;
+use crate::util::texture::{image_from_bmp, tex_from_bmp};
 use crate::wld::S3DWld;
-use libeq::archive::EqArchive;
-use godot::engine::{AudioStreamWav, ImageTexture, RefCounted};
+use libeq_archive::EqArchive;
+use godot::engine::{AudioStreamWav, ImageTexture, RefCounted, Image};
 use godot::prelude::*;
 use std::fs::File;
 use std::path::Path;
 
 #[derive(GodotClass)]
-#[class(init, base=RefCounted)]
+#[class(init)]
 pub struct EQArchive {
-    #[base]
     base: Base<RefCounted>,
     archive: Option<EqArchive>,
     /// The file stem of the archive, e.g. "rivervale".  This is used to get the main WLD out of the archive without specifying its name.
@@ -35,6 +34,17 @@ impl EQArchive {
     pub fn get_texture(&self, filename: GString) -> Option<Gd<ImageTexture>> {
         let data = self._get(filename.to_string().as_str())?;
         tex_from_bmp(data)
+            .map_err(|e| {
+                godot_error!("Failed to load image from {filename}: {e}");
+            })
+            .ok()
+    }
+
+    /// Returns a Image representation of the given bitmap filename
+    #[func]
+    pub fn get_image(&self, filename: GString) -> Option<Gd<Image>> {
+        let data = self._get(filename.to_string().as_str())?;
+        image_from_bmp(data)
             .map_err(|e| {
                 godot_error!("Failed to load image from {filename}: {e}");
             })

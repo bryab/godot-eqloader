@@ -1,11 +1,10 @@
 use crate::archive::EQArchive;
-use godot::engine::{Node, ProjectSettings};
+use godot::engine::{RefCounted, ProjectSettings};
 use godot::prelude::*;
 #[derive(GodotClass)]
-#[class(init,base=Node)] // FIXME: I don't want this to be a Node unless it must be.  This should just be a globally available static class somehow?
+#[class(init)]
 pub struct EQArchiveLoader {
-    #[base]
-    base: Base<Node>,
+    base: Base<RefCounted>,
 }
 
 #[godot_api]
@@ -18,8 +17,4 @@ impl EQArchiveLoader {
         obj.bind_mut().load(&filename);
         obj
     }
-
-    // set_data_dir
-
-    // load
 }
