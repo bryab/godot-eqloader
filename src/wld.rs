@@ -1,5 +1,5 @@
 use crate::fragments::{
-    EQFragmentUnknown, S3DActorDef, S3DActorInstance, S3DFragment, S3DHierSprite, S3DMaterial,
+    S3DUnknownFragment, S3DActorDef, S3DActorInstance, S3DFragment, S3DHierSprite, S3DMaterial,
     S3DMesh,
 };
 use godot::engine::RefCounted;
@@ -7,7 +7,7 @@ use godot::obj::bounds::{DeclUser, MemRefCounted};
 use godot::obj::cap::GodotDefault;
 use godot::prelude::*;
 use libeq_wld::parser::{
-    Actor, ActorDef, DmSpriteDef2, Fragment, FragmentType, HierarchicalSpriteDef,
+    Actor, ActorDef, Fragment, FragmentType, HierarchicalSpriteDef,
     MaterialDef, WldDoc,
 };
 use std::sync::Arc;
@@ -48,7 +48,7 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
         FragmentType::HierarchicalSpriteDef(_) => {
             Variant::from(gd_from_frag_type::<S3DHierSprite>(wld, index))
         }
-        _ => Variant::from(gd_from_frag_type::<EQFragmentUnknown>(wld, index)),
+        _ => Variant::from(gd_from_frag_type::<S3DUnknownFragment>(wld, index)),
     }
 }
 

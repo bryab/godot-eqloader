@@ -46,7 +46,7 @@ pub trait S3DFragment {
 
 #[derive(GodotClass)]
 #[class(init)]
-pub struct EQFragmentUnknown {
+pub struct S3DUnknownFragment {
     base: Base<RefCounted>,
     /// Index within the WLD - note that indices begin at 1.
     index: u32,
@@ -54,7 +54,7 @@ pub struct EQFragmentUnknown {
     wld: Option<Arc<WldDoc>>,
 }
 
-impl S3DFragment for EQFragmentUnknown {
+impl S3DFragment for S3DUnknownFragment {
     fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
         self.index = index;
         self.wld = Some(wld.clone())
@@ -65,7 +65,7 @@ impl S3DFragment for EQFragmentUnknown {
 
 /// A temporary placeholder for unsupported fragment types.
 #[godot_api]
-impl EQFragmentUnknown {
+impl S3DUnknownFragment {
 
     #[cfg(feature = "serde")]
     #[func]
@@ -124,7 +124,7 @@ impl EQFragmentUnknown {
     }
 }
 
-impl EQFragmentUnknown {
+impl S3DUnknownFragment {
     fn get_wld(&self) -> &Arc<WldDoc> {
         self.wld
             .as_ref()

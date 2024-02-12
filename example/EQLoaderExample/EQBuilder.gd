@@ -95,11 +95,13 @@ func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:
 	var texture_filenames = material_fragment.texture_filenames()
 	var num_textures = len(texture_filenames)
 	if num_textures > 1:
+		# Note that AnimatedTexture is deprecated, and a custom shader that handles
+		# bitmap animations would be better.
 		var anim = AnimatedTexture.new()
 		anim.frames = len(texture_filenames)
 		for i in range(num_textures):
 			anim.set_frame_texture(i, get_texture(texture_filenames[i]))
-			anim.set_frame_duration(i, material_fragment.delay()) # FIXME: Where is this stored? Anywhere?
+			anim.set_frame_duration(i, material_fragment.delay())
 		return anim
 	return get_texture(texture_filenames[0])
 
@@ -116,7 +118,6 @@ func create_material(material_fragment: S3DMaterial) -> Material:
 
 	var shader_type_id = material_fragment.shader_type_id()
 	# Note: I am just using standard material here but you'd need to provide different shaders for the various shader types: `material.shader_type_id()`
-	# Also note that the textures have metadata in them to identify the 'key color' for cutout transparency (not used in this example)
 	var material = ShaderMaterial.new()
 	material.set_name(material_name)
 	material.shader = get_shader(shader_type_id)
@@ -199,6 +200,8 @@ func build_actorinst(actorinst: S3DActorInstance) -> Node3D:
 
 	for eqmesh in actordef.meshes():
 		# The mesh must be built for each instance, because each instance has different vertex colors.
+		# It would be more efficient to re-use a single mesh, and deal with the vertex colors
+		# as a shader parameter.
 		var mesh = build_mesh(eqmesh, actorinst.vertex_colors())
 		
 		# First make the mesh and position it
@@ -286,10 +289,7 @@ func build_skeleton(eqskel: S3DHierSprite) -> Skeleton3D:
 	# First create all the bones
 	for bone in eqskel.bones():
 		var bone_name = bone.name()
-		#print(bone_name)
-		# Quick fix - in Godot bones cannot have empty names
-		if bone_name == "":
-			bone_name = "ROOT"
+
 		# Quick fix - in Godot bones cannot have duplicate names
 		for i in skeleton.get_bone_count():
 			if skeleton.get_bone_name(i) == bone_name:
@@ -297,21 +297,14 @@ func build_skeleton(eqskel: S3DHierSprite) -> Skeleton3D:
 				break
 
 		skeleton.add_bone(bone_name)
-			
-		# Honestly not sure which WLDs actually use this feature.
-		var mesh_attachment = bone.attachment()
-		if mesh_attachment:
-			print("Bone attachment: %s" % [mesh_attachment])
-			if mesh_attachment is S3DMesh:
-				var bone_attachment = BoneAttachment3D.new()
-				bone_attachment.name = "BONE_%s" % [bone_name]
-				bone_attachment.bone_name = bone_name
-				var mesh_inst = build_mesh_inst(mesh_attachment)
-				bone_attachment.add_child(mesh_inst)
-				skeleton.add_child(bone_attachment)
 		
 	# Then setup parenting - because the parents must exist first.
 	# Also set the rest pose
+
+	# Note that it is better to actually set the rest pose (skeleton.set_bone_rest)
+	# However to do this, you will need to pre-deform the character meshes to match
+	# The rest pose, which is beyond the scope of this example.
+
 	var bone_index = 0
 	for bone in eqskel.bones():
 		if bone.parent_index() >= 0:

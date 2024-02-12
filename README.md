@@ -45,3 +45,33 @@ linux.64 = "res://./godot_eqloader.so"
 macos.64 = "res://./godot_eqloader.dylib"
 windows.64 = "res://./godot_eqloader.dll"
 ```
+
+# Current State
+
+The following features are currently implemented:
+
+WLD fragment access
+
+- **S3DWld** - Provides methods for getting all the fragments described below
+- **S3DMesh** - A wrapper around `DMSPRITEDEF` and `DMSPRITEDEF2`, which represent all meshes
+- **S3DMaterial** - A wrapper around `MATERIALDEF` and its `SIMPLESPRITEDEF` and `BMINFO` references, which represent materials and their texture properties
+- **S3DActorDef** - A wrapper around `ACTORDEF`, which represents actors in the world such as placeable objects and characters
+- **S3DActorInstance** - A wrapper around `ACTOR`, which represents instances of `ACTORDEFS` in a zone
+- **S3DHierSprite** - A wrapper around `DMHIERARCHICALSPRITE`, which represents skeleton-based objects such as characters, and their animations (`TRACK` and `TRACKDEF` fragments)
+- **S3DUnknownFragment** - A wrapper around unsupported fragments, for analysis.  To actually look at the fragment data, see the "Extra Features" section below.
+
+Archive access
+
+- Loading `.wld` files as `S3DWld` objects (described above)
+- Loading `.bmp` files as Godot `Images` and `ImageTextures`
+- Loading `.wav` file as Godot `AudioStreamWAV`
+
+The following features may be supported in the future, and any help is welcome:
+
+- Regions (For the sole purpose of detecting whether the player is in a particular special region such as water, zoneline, etc)
+- Lights
+- Blitsprites
+
+ # Extra Features
+
+ This library can be compiled with a `serde` feature, which adds a new method to all fragments: `as_dict`.  This returns a serde-serialized representation of the underlying raw fragment data as a Godot `Dictionary`, for analysis.  For fragments that do not have a wrapper, you can get them and look at their data with `wld.at(fragment_index).as_dict()`.
