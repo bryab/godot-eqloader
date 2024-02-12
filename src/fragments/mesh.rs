@@ -299,7 +299,7 @@ struct DmSpriteProvider {
         self.get_frag()
             .vertex_normals
             .iter()
-            .map(|p| Vector3::new(p.0 as f32 / 127., p.2 as f32 / 127., p.1 as f32 / 127.))
+            .map(|p| Vector3::new(p.0, p.2, p.1))
             .collect::<PackedVector3Array>()
     }
 
@@ -317,7 +317,7 @@ struct DmSpriteProvider {
         self.get_frag()
             .texture_coordinates
             .iter()
-            .map(|p| Vector2::new(1.0 - p.0 as f32 / 256. * -1., 1.0 - p.1 as f32 / 256.))
+            .map(|p| Vector2::new(1.0 - p.0 * -1., 1.0 - p.1))
             .collect::<PackedVector2Array>()
     }
 
