@@ -14,17 +14,21 @@ pub fn sound_from_bytes(data: Vec<u8>) -> Result<Gd<AudioStreamWav>, String> {
             for byte in &mut d {
                 *byte -= 128;
             }
+            let num_samples = d.len() as i32;
             wav.set_format(audio_stream_wav::Format::FORMAT_8_BITS);
             wav.set_data(PackedByteArray::from(&d[..]));
             wav.set_mix_rate(header.sampling_rate as i32);
+            wav.set_loop_end(num_samples);
             Ok(wav)
         },
         wav::BitDepth::Sixteen(d) => {
+            let num_samples = d.len() as i32;
             let mut wav = AudioStreamWav::new_gd();
             let d: Vec<u8> = d.iter().flat_map(|b|b.to_le_bytes()).collect();
             wav.set_format(audio_stream_wav::Format::FORMAT_16_BITS);
             wav.set_data(PackedByteArray::from(&d[..]));
             wav.set_mix_rate(header.sampling_rate as i32);
+            wav.set_loop_end(num_samples);
             Ok(wav)
         }
         _ => Err(format!("Unsupported WAV format: {}", header.audio_format)),
