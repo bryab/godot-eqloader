@@ -1,6 +1,6 @@
 use godot::engine::RefCounted;
 use godot::prelude::*;
-use libeq_wld::parser::{DmSpriteDef, DmSpriteDef2, FragmentType, MaterialDef, WldDoc, DmSprite, FragmentRef};
+use libeq_wld::parser::{DmSprite, DmSpriteDef, DmSpriteDef2, DmTrackDef2, DmTrackDef, FragmentRef, FragmentType, MaterialDef, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
 use super::{create_fragment_ref, S3DFragment};
@@ -24,6 +24,7 @@ trait MeshProvider {
     fn face_material_groups(&self) -> Array<VariantArray>; 
     fn indices(&self) -> PackedInt32Array;   
     fn collision_vertices(&self) -> PackedVector3Array;
+    fn animated_vertices(&self) -> Array<PackedVector3Array>;
     #[cfg(feature = "serde")]
     fn as_dict(&self) -> Dictionary;
 }
@@ -193,6 +194,18 @@ impl MeshProvider for DmSprite2Provider {
             .collect()
     }
 
+    fn animated_vertices(&self) -> Array<PackedVector3Array> {
+        let scale = 1.0 / (1 << self.get_frag().scale) as f32;
+        let dmtrackdef = match self.get_dmtrackdef() {
+            Some(fragment) => fragment,
+            None => return Array::new()
+        };
+        dmtrackdef.frames.iter().map(|frame| {
+            frame.iter().map(|p| wld_i16_pos_to_gd(p, scale)).collect::<PackedVector3Array>()
+
+        }).collect()
+    }
+
     
         // pub fn faces(&self) -> Array<VariantArray> {
         //     let frag = self.get_frag();
@@ -238,6 +251,12 @@ impl DmSprite2Provider {
                     .expect("Material should exist - it's in the material list")
             })
             .collect()
+    }
+
+    fn get_dmtrackdef(&self) -> Option<&DmTrackDef2> {
+        let wld = self.get_wld();
+        let fragment = wld.get(&self.get_frag().animation_ref)?;
+        wld.get(&fragment.reference)
     }
 
 
@@ -408,6 +427,17 @@ struct DmSpriteProvider {
             .collect()
     }
 
+    fn animated_vertices(&self) -> Array<PackedVector3Array> {
+        let dmtrackdef = match self.get_dmtrackdef() {
+            Some(fragment) => fragment,
+            None => return Array::new()
+        };
+        dmtrackdef.frames.iter().map(|frame| {
+            frame.iter().map(|p| wld_f32_pos_to_gd(p)).collect::<PackedVector3Array>()
+
+        }).collect()
+    }
+
     #[cfg(feature = "serde")]
     fn as_dict(&self) -> Dictionary {
         let frag = self.get_frag();
@@ -433,6 +463,40 @@ struct DmSpriteProvider {
                     .expect("Material should exist - it's in the material list")
             })
             .collect()
+    }
+
+    fn get_dmtrackdef(&self) -> Option<&DmTrackDef> {
+        // Below was an experiment, but does not work in the only case I know of where a DMTRACK exists (gequip/IT4)
+        // In that case, the vertex animations are not referenced but rather that fragment is named in the manner
+        // of TRACKs.  Since this is so obscure I am just going to disable this.
+
+        None
+
+        // let wld = self.get_wld();
+        // let frag = self.get_frag();
+        // let fragment_index = frag.fragment3;
+        // if fragment_index <= 0 {
+        //     return None;
+        // }
+        // let dmtrack = wld.at(fragment_index as usize - 1).unwrap();
+        // let dmtrack = match dmtrack {
+        //     FragmentType::DmTrack(fragment) => fragment,
+        //     _ => {
+        //         godot_error!("DMSPRITEDEF fragment3 is not DMTRACK");
+        //         return None;
+        //     }
+        // };
+        // // FIXME: dmtrack.reference should be for DMTRACKDEF not DMTRACKDEF2 (fix in eqwld after testing)
+        // match dmtrack.reference {
+        //     FragmentRef::Index(index, _) => {
+        //         let fragment = wld.at(index as usize - 1).unwrap();
+        //         match fragment {
+        //             FragmentType::DmTrackDef(fragment) => Some(fragment),
+        //             _ => None,
+        //         }
+        //     }
+        //     FragmentRef::Name(_, _) => None,
+        // }
     }
 
 }
@@ -547,6 +611,13 @@ impl S3DMesh {
     pub fn collision_vertices(&self) -> PackedVector3Array {
         self.get_provider().collision_vertices()
     }
+
+    /// Construct an array of Vector3s that represent a sequence of vertices if this mesh has vertex animations
+    #[func]
+    pub fn animated_vertices(&self) -> Array<PackedVector3Array> {
+        self.get_provider().animated_vertices()
+    }
+
     #[cfg(feature = "serde")]
     #[func]
     pub fn as_dict(&self) -> Dictionary {
