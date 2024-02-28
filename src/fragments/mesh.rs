@@ -14,6 +14,8 @@ trait MeshProvider {
     fn name(&self) -> GString;
     fn flags(&self) -> u32;
     fn get_wld(&self) -> &Arc<WldDoc>;
+    fn bounds(&self) -> Aabb;
+    fn bounds_radius(&self) -> f32;
     fn center(&self) -> Vector3;
     fn vertices(&self) -> PackedVector3Array;
     fn normals(&self) -> PackedVector3Array; 
@@ -24,7 +26,9 @@ trait MeshProvider {
     fn face_material_groups(&self) -> Array<VariantArray>; 
     fn indices(&self) -> PackedInt32Array;   
     fn collision_vertices(&self) -> PackedVector3Array;
+    fn is_animated(&self) -> bool;
     fn animated_vertices(&self) -> Array<PackedVector3Array>;
+    fn animation_speed(&self) -> f32;
     #[cfg(feature = "serde")]
     fn as_dict(&self) -> Dictionary;
 }
@@ -49,6 +53,16 @@ impl MeshProvider for DmSprite2Provider {
     fn get_wld(&self) -> &Arc<WldDoc> {
         self.fragment
             .as_owner()
+    }
+
+    fn bounds(&self) -> Aabb {
+        let min = wld_f32_pos_to_gd(&self.fragment.as_ref().min);
+        let max = wld_f32_pos_to_gd(&self.fragment.as_ref().max);
+        Aabb::new(min, max-min).abs()
+    }
+
+    fn bounds_radius(&self) -> f32 {
+        self.fragment.as_ref().max_distance
     }
 
     fn center(&self) -> Vector3 {
@@ -168,9 +182,9 @@ impl MeshProvider for DmSprite2Provider {
             .iter()
             .flat_map(|v| {
                 vec![
-                    v.vertex_indexes.2 as i32,
-                    v.vertex_indexes.1 as i32,
                     v.vertex_indexes.0 as i32,
+                    v.vertex_indexes.1 as i32,
+                    v.vertex_indexes.2 as i32,
                 ]
                 .into_iter()
             })
@@ -186,12 +200,16 @@ impl MeshProvider for DmSprite2Provider {
             .filter(|face| face.flags & 0x10 == 0)
             .flat_map(|face| {
                 vec![
-                    wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.2 as usize], scale),
-                    wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.1 as usize], scale),
                     wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.0 as usize], scale),
+                    wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.1 as usize], scale),
+                    wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.2 as usize], scale),
                 ]
             })
             .collect()
+    }
+
+    fn is_animated(&self) -> bool {
+        self.get_dmtrackdef().is_some()
     }
 
     fn animated_vertices(&self) -> Array<PackedVector3Array> {
@@ -204,6 +222,13 @@ impl MeshProvider for DmSprite2Provider {
             frame.iter().map(|p| wld_i16_pos_to_gd(p, scale)).collect::<PackedVector3Array>()
 
         }).collect()
+    }
+
+    fn animation_speed(&self) -> f32 {
+        match self.get_dmtrackdef() {
+            Some(fragment) => fragment.param1 as f32 * 0.001,
+            None => return 0.
+        }
     }
 
     
@@ -287,6 +312,16 @@ struct DmSpriteProvider {
 
     fn center(&self) -> Vector3 {
         wld_f32_pos_to_gd(&self.get_frag().center)
+    }
+
+    fn bounds(&self) -> Aabb {
+        // FIXME: IF this is part of this fragment, is it unknown
+        Aabb::new(Vector3::ZERO, Vector3::ZERO)
+    }
+
+    fn bounds_radius(&self) -> f32 {
+        // FIXME: IF this is part of this fragment, is it unknown
+        0.
     }
 
 
@@ -402,9 +437,9 @@ struct DmSpriteProvider {
             .iter()
             .flat_map(|v| {
                 vec![
-                    v.vertex_indexes.2 as i32,
-                    v.vertex_indexes.1 as i32,
                     v.vertex_indexes.0 as i32,
+                    v.vertex_indexes.1 as i32,
+                    v.vertex_indexes.2 as i32,
                 ]
                 .into_iter()
             })
@@ -419,12 +454,16 @@ struct DmSpriteProvider {
             .filter(|face| face.flags & 0x10 == 0)
             .flat_map(|face| {
                 vec![
-                    wld_f32_pos_to_gd(&frag.vertices[face.vertex_indexes.2 as usize]),
-                    wld_f32_pos_to_gd(&frag.vertices[face.vertex_indexes.1 as usize]),
                     wld_f32_pos_to_gd(&frag.vertices[face.vertex_indexes.0 as usize]),
+                    wld_f32_pos_to_gd(&frag.vertices[face.vertex_indexes.1 as usize]),
+                    wld_f32_pos_to_gd(&frag.vertices[face.vertex_indexes.2 as usize]),
                 ]
             })
             .collect()
+    }
+
+    fn is_animated(&self) -> bool {
+        self.get_dmtrackdef().is_some()
     }
 
     fn animated_vertices(&self) -> Array<PackedVector3Array> {
@@ -436,6 +475,13 @@ struct DmSpriteProvider {
             frame.iter().map(|p| wld_f32_pos_to_gd(p)).collect::<PackedVector3Array>()
 
         }).collect()
+    }
+
+    fn animation_speed(&self) -> f32 {
+        match self.get_dmtrackdef() {
+            Some(fragment) => fragment.sleep as f32 * 0.001,
+            None => 0.
+        }
     }
 
     #[cfg(feature = "serde")]
@@ -501,7 +547,7 @@ struct DmSpriteProvider {
 
 }
 
- #[derive(GodotClass)]
+#[derive(GodotClass)]
 #[class(init)]
 pub struct S3DMesh {
     base: Base<RefCounted>,
@@ -547,6 +593,18 @@ impl S3DMesh {
     #[func]
     pub fn center(&self) -> Vector3 {
         self.get_provider().center()
+    }
+
+    /// Return a AABB representing the bounding box of the mesh
+    #[func]
+    pub fn bounds(&self) -> Aabb {
+        self.get_provider().bounds()
+    }
+
+    // Return the maximum distance from center of all vertices in the mesh
+    #[func]
+    pub fn bounds_radius(&self) -> f32 {
+        self.get_provider().bounds_radius()
     }
 
     /// Returns the vertex positions of the mesh, converted into Godot format.
@@ -612,11 +670,24 @@ impl S3DMesh {
         self.get_provider().collision_vertices()
     }
 
+    /// Return true if this mesh has vertex animations
+    #[func]
+    pub fn is_animated(&self) -> bool {
+        self.get_provider().is_animated()
+    }
+
     /// Construct an array of Vector3s that represent a sequence of vertices if this mesh has vertex animations
     #[func]
     pub fn animated_vertices(&self) -> Array<PackedVector3Array> {
         self.get_provider().animated_vertices()
     }
+
+    /// Return the delay in seconds between each frame in the vertex animation sequence
+    #[func]
+    pub fn animation_speed(&self) -> f32 {
+        self.get_provider().animation_speed()
+    }
+
 
     #[cfg(feature = "serde")]
     #[func]

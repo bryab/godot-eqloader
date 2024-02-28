@@ -3,6 +3,7 @@ use godot::prelude::*;
 use libeq_wld::parser::{Location, Actor, WldDoc};
 use std::sync::Arc;
 extern crate owning_ref;
+use crate::wld::gd_from_frag;
 use super::{create_fragment_ref, S3DFragment};
 use crate::util::{u32_to_color, wld_degrees_rot_to_quat, wld_f32_pos_to_gd};
 use owning_ref::ArcRef;
@@ -30,11 +31,29 @@ impl S3DActorInstance {
 
     #[func]
     pub fn actordef_name(&self) -> GString {
+        // Note - If this is an invalid string reference,
+        // Then it is probably actually a fragment reference.
+        // The referenced fragment can be obtained via zone_actordef()
         GString::from(
             self.get_wld()
                 .get_string(self.get_frag().actor_def_reference)
-                .expect("Failed to get string from WLD!"),
+                .unwrap_or("")
         )
+    }
+
+
+    /// In a Zone WLD, the Actor can be obtained directly from this fragment,
+    /// Unlike in placeable objects that refer to an actor defined in a different WLd
+    /// by name.
+    /// This method returns S3DActorDef or nil
+    #[func]
+    pub fn zone_actordef(&self) -> Variant {
+        let wld = self.get_wld();
+        let index = self.get_frag().actor_def_reference.0;
+        if index <= 0 {
+            return Variant::nil()
+        }
+        gd_from_frag(wld, index as u32)
     }
 
     /// Returns the vertex colors to be used for this instance, converted into Godot format.

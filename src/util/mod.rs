@@ -3,9 +3,12 @@ pub mod texture;
 use godot::prelude::*;
 use std::f32::consts::PI;
 
+/// Convert feet to meters - helps the assets fit better into Godot's scale standards.
+pub const WORLD_SCALE: f32 = 0.30480006096;
+
 /// Convert a float32 position value expressed in EQ coordinates into Godot coordinates
 pub fn wld_f32_pos_to_gd(tup: &(f32, f32, f32)) -> Vector3 {
-    Vector3::new(tup.0 * -1., tup.2, tup.1)
+    Vector3::new(tup.0 * -1., tup.2, tup.1) * WORLD_SCALE
 }
 
 /// Convert a int16 position value expressed in EQ coordinates into Godot coordinates
@@ -14,7 +17,7 @@ pub fn wld_i16_pos_to_gd(p: &(i16, i16, i16), scale: f32) -> Vector3 {
         p.0 as f32 * scale * -1.,
         p.2 as f32 * scale,
         p.1 as f32 * scale,
-    )
+    ) * WORLD_SCALE
 }
 
 /// Converts a rotation expressed in Euler degrees, in X / 512, to a Godot Quaternion.
