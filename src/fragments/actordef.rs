@@ -1,4 +1,4 @@
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::prelude::*;
 use libeq_wld::parser::{FragmentRef, DmSprite, ActorDef, WldDoc};
 use std::sync::Arc;
@@ -7,6 +7,7 @@ use super::{create_fragment_ref, S3DFragment, S3DMesh};
 use owning_ref::ArcRef;
 #[cfg(feature = "serde")]
 use super::frag_to_dict;
+use crate::wld::gd_from_frag;
 
 #[derive(GodotClass)]
 #[class(init)]
@@ -41,6 +42,19 @@ impl S3DActorDef {
             .get_string(self.get_frag().callback_name_reference)
             .expect("Failed to get string from WLD!")
         )
+    }
+
+    #[func]
+    fn references(&self) -> Array<Variant> {
+        let wld = self.get_wld();
+        self.get_frag()
+            .fragment_references
+            .iter()
+            .filter_map(|fragment_ref| {
+                Some(gd_from_frag(wld, *fragment_ref))
+                
+            })
+            .collect()
     }
 
     #[func]

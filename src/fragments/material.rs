@@ -1,4 +1,4 @@
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::prelude::*;
 use libeq_wld::parser::{MaterialDef, RenderMethod, SimpleSpriteDef, WldDoc};
 use std::sync::Arc;

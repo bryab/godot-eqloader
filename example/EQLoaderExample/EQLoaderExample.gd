@@ -10,6 +10,11 @@ func _ready():
 	
 	var args = OS.get_cmdline_user_args()
 	
+	
+	print("Loading...")
+	for zone_name in get_all_zone_names():
+		print("Found zone: %s" % [zone_name])
+	
 	if len(args):
 		var cmd = args[0]
 		if cmd == "--zone":
@@ -38,6 +43,7 @@ func _exit_tree():
 # Just a quick function to get the names of all the zones in the data directory
 func get_all_zone_names():
 	var eqdir = builder.get_eq_data_dir()
+	print("Attempting to load from dir: %s" % [eqdir])
 	var names = []
 	for filename in DirAccess.get_files_at(eqdir):
 		if "_" in filename:

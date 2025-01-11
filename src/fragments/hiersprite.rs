@@ -1,10 +1,9 @@
-use godot::engine::animation::{InterpolationType, TrackType};
+use godot::classes::animation::{InterpolationType, TrackType};
 
-use godot::engine::{Animation, AnimationLibrary, RefCounted};
+use godot::classes::{Animation, AnimationLibrary, RefCounted};
 use godot::prelude::*;
 use libeq_wld::parser::{
-    Dag, FragmentRef, FragmentType, FrameTransform, HierarchicalSpriteDef, LegacyFrameTransform,
-    MaterialDef, StringReference, Track, TrackDef, WldDoc,
+    Dag, FragmentRef, FragmentType, FrameTransform, HierarchicalSprite, HierarchicalSpriteDef, LegacyFrameTransform, MaterialDef, StringReference, Track, TrackDef, WldDoc
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -13,7 +12,7 @@ extern crate owning_ref;
 use super::frag_to_dict;
 use super::{create_fragment_ref, S3DFragment, S3DMesh};
 use crate::util::wld_f32_pos_to_gd;
-use crate::wld::gd_from_frag;
+use crate::wld::{gd_from_frag, gd_from_frag_type};
 use owning_ref::ArcRef;
 
 /// The rest animation is unnamed in the EQ data.  We need to give it a name.
@@ -234,7 +233,7 @@ impl S3DHierSprite {
     pub fn animation_library(&self) -> Gd<AnimationLibrary> {
         let mut library = AnimationLibrary::new_gd();
         for (animation_name, animation) in self._animations() {
-            library.add_animation(StringName::from(animation_name), animation);
+            library.add_animation(&StringName::from(animation_name), &animation);
         }
         library
     }
@@ -329,11 +328,13 @@ impl S3DHierSprite {
                 }
                 if !animations.contains_key(&animation_name) {
                     let mut anim = Animation::new_gd();
-                    if !(dag_track.flags.interpolate()) {
-                        godot_error!("Track no interpolate: {}", dag_track_name);
-                    }
+                    // Note, if 'interpolate' is false this seems to mean there is no animation (just a single frame)
+                    // I don't see what use to make of this, however.
+                    // if !(dag_track.flags.interpolate()) {
+                    //     //godot_error!("Track no interpolate: {}", dag_track_name);
+                    // }
                     anim.set_length(0.); // Default length is 1 second.  Set to 0, as we calculate length later.
-                                         //anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
+                    //anim.set_loop_mode(LoopMode::LINEAR); // FIXME: Playback mode may be in fragment.  Defaulting to loopingw.
                     animations.insert(animation_name.clone(), anim);
                 }
                 let anim = animations.get_mut(&animation_name).unwrap();
@@ -341,13 +342,13 @@ impl S3DHierSprite {
                 let rot_track_idx = anim.add_track(TrackType::ROTATION_3D);
 
                 let bone_path = NodePath::from(format!("{0}:{1}", skeleton_path, bone_name));
-                anim.track_set_path(pos_track_idx, bone_path.clone());
+                anim.track_set_path(pos_track_idx, &bone_path);
                 // This is the default
                 // anim.track_set_interpolation_type(
                 //     pos_track_idx,
                 //     InterpolationType::INTERPOLATION_LINEAR,
                 // );
-                anim.track_set_path(rot_track_idx, bone_path);
+                anim.track_set_path(rot_track_idx, &bone_path);
                 anim.track_set_interpolation_type(
                     rot_track_idx,
                     InterpolationType::LINEAR_ANGLE, // Linear interpolation with shortest path rotation.  This seems to match EQ better, but there are problems.
@@ -412,6 +413,20 @@ impl S3DHierSprite {
         wld.get(&FragmentRef::<Track>::new(dag.track_reference as i32))
             .expect("DAG should have a valid Track")
     }
+
+    pub fn from_reference(wld: &Arc<WldDoc>, reference: &HierarchicalSprite) -> Option<Gd<Self>> {
+        match reference.reference {
+            FragmentRef::Index(index, _) => {
+                let fragment = wld.at(index as usize - 1).unwrap();
+                match fragment {
+                    FragmentType::HierarchicalSpriteDef(_) => Some(gd_from_frag_type::<Self>(wld, index)),
+                    _ => None,
+                }
+            }
+            FragmentRef::Name(_, _) => None,
+        }
+    }
+
 }
 
 /// Extracts the generic bone name from the DAG name.

@@ -8,14 +8,16 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-godot = { git = "https://github.com/godot-rust/gdext", branch = "master" }
+godot = { git = "https://github.com/godot-rust/gdext", branch = "master", features = ["experimental-threads"]}
 libeq_wld = { git = "https://github.com/cjab/libeq.git", branch = "master" }
 libeq_archive = { git = "https://github.com/cjab/libeq.git", branch = "master" }
 image = { version="0.*", default-features = false, features=["bmp"]}
-wav = {version="1.*"}
+hound = {version="3.5.*"}
 owning_ref = "0.*"
 serde = { version = "1", optional = true }
 serde_json = {version = "1", optional = true}
 
 [features]
+default = ["dds"]
 serde = ["dep:serde", "dep:serde_json", "libeq_wld/serde"]
+dds = ["image/dds"]

@@ -1,4 +1,4 @@
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::prelude::*;
 use libeq_wld::parser::{DmSprite, DmSpriteDef, DmSpriteDef2, DmTrackDef2, DmTrackDef, FragmentRef, FragmentType, MaterialDef, WldDoc};
 use std::sync::Arc;
@@ -165,11 +165,11 @@ impl MeshProvider for DmSprite2Provider {
                     .collect();
 
                 let mut array = VariantArray::new();
-                array.push(Variant::from(GString::from(
+                array.push(&Variant::from(GString::from(
                     wld.get_string(material.name_reference)
                         .expect("Material name should be a valid string"),
                 )));
-                array.push(Variant::from(indices));
+                array.push(&Variant::from(indices));
                 return Some(array);
             })
             .collect()
@@ -417,11 +417,11 @@ struct DmSpriteProvider {
                     .collect();
 
                 let mut array = VariantArray::new();
-                array.push(Variant::from(GString::from(
+                array.push(&Variant::from(GString::from(
                     wld.get_string(material.name_reference)
                         .expect("Material name should be a valid string"),
                 )));
-                array.push(Variant::from(indices));
+                array.push(&Variant::from(indices));
                 return Some(array);
             })
             .collect()

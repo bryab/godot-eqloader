@@ -1,9 +1,29 @@
-use godot::engine::image::Format;
-use godot::engine::{Image, ImageTexture};
+use godot::classes::image::Format;
+use godot::classes::{Image, ImageTexture};
 use godot::prelude::*;
 use image::codecs::bmp::BmpDecoder;
 use image::DynamicImage;
 use std::io::Cursor;
+#[cfg(feature = "dds")]
+use image::codecs::dds::DdsDecoder;
+
+#[cfg(feature = "dds")]
+pub fn image_from_dds(dds_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
+    let mut file = Cursor::new(dds_data);
+    let decoder = DdsDecoder::new(&mut file).map_err(|_| "Invalid DDS data!")?;
+    let dds = DynamicImage::from_decoder(decoder).map_err(|_| "Failed to decode DDS data!")?;
+    // FIXME: There is no API for loading DDS data directly into Godot.
+    // I am converting to 8-bit RGBA as a temporary solution (which of course eliminates mipmaps and whatever compression is used)
+    let buffer = dds.into_rgba8();
+    let image = Image::create_from_data(
+        buffer.width() as i32,
+        buffer.height() as i32,
+        false,
+        Format::RGBA8,
+        &PackedByteArray::from(&buffer.into_raw()[..]),
+    ).ok_or_else(|| "Failed to create Godot Image from Image")?;
+    Ok(image)
+}
 
 /// Creates an Image from the bytes representing a BMP file.
 /// The image is converted to RGB8 if it is a format that is unsupported in Godot.
@@ -54,10 +74,10 @@ pub fn image_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
         height as i32,
         false,
         image_format,
-        PackedByteArray::from(&buffer[..]),
+        &PackedByteArray::from(&buffer[..]),
     )
     .ok_or_else(|| "Failed to create Godot Image from Image")?;
-    image.set_meta(StringName::from("key_color"), key_color);
+    image.set_meta(&StringName::from("key_color"), &key_color);
     Ok(image)
 }
 
@@ -66,10 +86,10 @@ pub fn image_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
 /// The "key color" for cutout transparency is the first color in the BMP palette.  This is stored as metadata in the Godot image to be used later.
 pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
     let image = image_from_bmp(bmp_data)?;
-    let key_color = image.get_meta("key_color".into());
-    let mut tex = ImageTexture::create_from_image(image)
+    let key_color = image.get_meta("key_color");
+    let mut tex = ImageTexture::create_from_image(&image)
         .ok_or_else(|| "Failed to create Godot ImageTexture from Godot Image")?;
-    tex.set_meta(StringName::from("key_color"), key_color);
+    tex.set_meta(&StringName::from("key_color"), &key_color);
     Ok(tex)
 }
 

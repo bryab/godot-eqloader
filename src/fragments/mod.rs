@@ -5,7 +5,7 @@ mod material;
 mod mesh;
 pub use actordef::*;
 pub use actorinst::*;
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::prelude::*;
 pub use hiersprite::*;
 use libeq_wld::parser::{Fragment, FragmentType, WldDoc};
@@ -16,12 +16,12 @@ use std::sync::Arc;
 
 #[cfg(feature = "serde")]
 fn frag_to_dict<T: 'static + Fragment + serde::ser::Serialize>(wld: &WldDoc, fragment: &T) -> Dictionary {
-    use godot::engine::Json;
+    use godot::classes::Json;
     let frag = fragment.as_any().downcast_ref::<T>().unwrap();
     let json_string =
         serde_json::to_string(frag).unwrap();
     let mut json = Json::new_gd();
-    let _result = json.parse(GString::from(json_string));
+    let _result = json.parse(&GString::from(json_string));
     let variant = json.get_data();
     let mut d = variant.to::<Dictionary>();
     d.set("type_id", frag.type_id());

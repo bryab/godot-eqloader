@@ -1,11 +1,14 @@
 use crate::util::sound::sound_from_bytes;
 use crate::util::texture::{image_from_bmp, tex_from_bmp};
+#[cfg(feature = "dds")]
+use crate::util::texture::image_from_dds;
 use crate::wld::S3DWld;
 use libeq_archive::EqArchive;
-use godot::engine::{AudioStreamWav, ImageTexture, RefCounted, Image};
+use godot::classes::{AudioStreamWav, ImageTexture, RefCounted, Image};
 use godot::prelude::*;
 use std::fs::File;
 use std::path::Path;
+use std::ffi::OsStr;
 
 #[derive(GodotClass)]
 #[class(init)]
@@ -44,11 +47,27 @@ impl EQArchive {
     #[func]
     pub fn get_image(&self, filename: GString) -> Option<Gd<Image>> {
         let data = self._get(filename.to_string().as_str())?;
-        image_from_bmp(data)
-            .map_err(|e| {
-                godot_error!("Failed to load image from {filename}: {e}");
-            })
-            .ok()
+        match Path::new(filename.to_string().as_str()).extension().and_then(OsStr::to_str).expect("Filename should have extension") {
+            "bmp" => {
+                image_from_bmp(data)
+                .map_err(|e| {
+                    godot_error!("Failed to load image from {filename}: {e}");
+                })
+                .ok()
+            },
+            #[cfg(feature = "dds")]
+            "dds" => {
+                image_from_dds(data)
+                .map_err(|e| {
+                    godot_error!("Failed to load image from {filename}: {e}");
+                })
+                .ok()
+            }
+            _ => {
+                godot_error!("Unsupported image format: {filename}");
+                None
+            }
+        }        
     }
 
     /// Returns a Sound representation of the given audio filename (WAV)

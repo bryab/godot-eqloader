@@ -1,4 +1,4 @@
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::prelude::*;
 use libeq_wld::parser::{Location, Actor, WldDoc};
 use std::sync::Arc;
@@ -15,6 +15,7 @@ use super::frag_to_dict;
 pub struct S3DActorInstance {
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, Actor>>,
+    index: u32
 }
 
 #[godot_api]
@@ -27,6 +28,12 @@ impl S3DActorInstance {
                 .get_string(self.get_frag().name_reference)
                 .expect("Failed to get string from WLD!"),
         )
+    }
+
+    /// The index of the fragment within the WLD.
+    #[func]
+    pub fn index(&self) -> u32 {
+        self.index
     }
 
     #[func]
@@ -115,6 +122,7 @@ impl S3DActorInstance {
 impl S3DFragment for S3DActorInstance {
     fn load(&mut self, wld: &Arc<WldDoc>, index: u32) {
         self.fragment = Some(create_fragment_ref(wld.clone(), index));
+        self.index = index;
     }
 }
 

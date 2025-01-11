@@ -2,7 +2,7 @@ use crate::fragments::{
     S3DUnknownFragment, S3DActorDef, S3DActorInstance, S3DFragment, S3DHierSprite, S3DMaterial,
     S3DMesh,
 };
-use godot::engine::RefCounted;
+use godot::classes::RefCounted;
 use godot::obj::bounds::{DeclUser, MemRefCounted};
 use godot::obj::cap::GodotDefault;
 use godot::prelude::*;
@@ -25,6 +25,7 @@ pub fn gd_from_frag_type<
     obj
 }
 /// Attempts to create a S3D Godot class from the given fragment index, without knowing its type, returning a Variant.
+/// Note that the index supplied is the kind that starts at 1, not 0
 pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
     let fragment_type = match wld.at((index - 1) as usize) {
         Some(myval) => myval,
@@ -45,6 +46,8 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
         FragmentType::MaterialDef(_) => Variant::from(gd_from_frag_type::<S3DMaterial>(wld, index)),
         FragmentType::ActorDef(_) => Variant::from(gd_from_frag_type::<S3DActorDef>(wld, index)),
         FragmentType::Actor(_) => Variant::from(gd_from_frag_type::<S3DActorInstance>(wld, index)),
+        FragmentType::HierarchicalSprite(reference) => 
+            S3DHierSprite::from_reference(wld, reference).and_then(|frag| Some(Variant::from(frag))).unwrap_or_default(),
         FragmentType::HierarchicalSpriteDef(_) => {
             Variant::from(gd_from_frag_type::<S3DHierSprite>(wld, index))
         }

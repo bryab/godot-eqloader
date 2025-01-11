@@ -17,8 +17,12 @@ func get_shader(shader_type_id: int) -> Shader:
 func get_eq_data_dir():
 	var eq_dir_locations = [OS.get_environment("EQDATA"), "res://eq_data"]
 	for eqdir in eq_dir_locations:
-		if DirAccess.open(eqdir) != null:
+		if not eqdir:
+			continue
+		if DirAccess.open(eqdir):
+			print("This is the eqdir: %s" % [eqdir])
 			return eqdir
+	push_error("Failed to find any eq data dir.")
 	
 func load_archive_textures(archive):
 	print("Loading textures from archive: %s" % [archive])
@@ -34,7 +38,7 @@ func load_wld_materials(wld):
 		if material is S3DMaterial:
 			create_material(material)
 
-func load_zone(zone_name):
+func load_zone(zone_name: String):
 
 	var eqdir = get_eq_data_dir()
 	var loader = EQArchiveLoader.new()
