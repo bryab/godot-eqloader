@@ -107,7 +107,7 @@ impl S3DActorInstance {
 
     #[func]
     pub fn rotation(&self) -> Vector3 {
-        self.quaternion().to_euler(EulerOrder::XYZ)
+        self.quaternion().get_euler_with(EulerOrder::XYZ)
     }
 
     #[cfg(feature = "serde")]

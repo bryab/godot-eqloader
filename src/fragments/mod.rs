@@ -8,7 +8,7 @@ pub use actorinst::*;
 use godot::classes::RefCounted;
 use godot::prelude::*;
 pub use hiersprite::*;
-use libeq_wld::parser::{Fragment, FragmentType, WldDoc};
+use libeq_wld::parser::{Fragment, WldDoc};
 pub use material::*;
 pub use mesh::*;
 use owning_ref::ArcRef;
@@ -124,10 +124,10 @@ impl S3DUnknownFragment {
     }
 }
 
-impl S3DUnknownFragment {
-    fn get_wld(&self) -> &Arc<WldDoc> {
-        self.wld
-            .as_ref()
-            .expect("Failed to get WLD reference!")
-    }
-}
+// impl S3DUnknownFragment {
+//     fn get_wld(&self) -> &Arc<WldDoc> {
+//         self.wld
+//             .as_ref()
+//             .expect("Failed to get WLD reference!")
+//     }
+// }

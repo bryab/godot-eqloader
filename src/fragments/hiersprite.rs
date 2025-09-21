@@ -135,7 +135,7 @@ impl S3DHierSprite {
 
     #[func]
     pub fn tag(&self) -> GString {
-        GString::from(self._tag())
+        GString::from(&self._tag())
     }
 
     #[func]
@@ -233,7 +233,7 @@ impl S3DHierSprite {
     pub fn animation_library(&self) -> Gd<AnimationLibrary> {
         let mut library = AnimationLibrary::new_gd();
         for (animation_name, animation) in self._animations() {
-            library.add_animation(&StringName::from(animation_name), &animation);
+            library.add_animation(&StringName::from(&animation_name), &animation);
         }
         library
     }
@@ -341,7 +341,7 @@ impl S3DHierSprite {
                 let pos_track_idx = anim.add_track(TrackType::POSITION_3D);
                 let rot_track_idx = anim.add_track(TrackType::ROTATION_3D);
 
-                let bone_path = NodePath::from(format!("{0}:{1}", skeleton_path, bone_name));
+                let bone_path = NodePath::from(&format!("{0}:{1}", skeleton_path, bone_name));
                 anim.track_set_path(pos_track_idx, &bone_path);
                 // This is the default
                 // anim.track_set_interpolation_type(

@@ -154,7 +154,7 @@ impl S3DMaterial {
                     .iter()
                     // These also seem to be stored in all caps. The s3d files however store
                     // filenames in lowercase. This accounts for that.
-                    .map(|e| GString::from(e.file_name.to_lowercase()))
+                    .map(|e| GString::from(&e.file_name.to_lowercase()))
                     .collect::<Vec<_>>(),
                 None => vec![],
             })
