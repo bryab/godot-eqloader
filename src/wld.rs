@@ -104,7 +104,7 @@ impl S3DWld {
         wld.iter()
             .enumerate()
             .filter_map(|(index, fragment)| {
-                match fragment.as_ref() {
+                match fragment {
                     FragmentType::DmSpriteDef(_) => Some(gd_from_frag_type(wld, index as u32 + 1)),
                     FragmentType::DmSpriteDef2(_) => Some(gd_from_frag_type(wld, index as u32 + 1)),
                     _ => None

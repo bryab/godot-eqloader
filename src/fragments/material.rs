@@ -71,13 +71,13 @@ impl S3DMaterial {
 
     #[func]
     pub fn flags(&self) -> u32 {
-        self.get_frag().flags
+        self.get_frag().flags.into()
     }
 
     /// Returns true if the material is visible.  Invisible materials refer to polygons that have collision but are invisible.
     #[func]
     pub fn visible(&self) -> bool {
-        return self.get_frag().render_method.as_u32() != 0;
+        u32::from(self.get_frag().render_method) != 0
     }
 
     /// Returns the index number of the correct shader for this material.
@@ -145,7 +145,7 @@ impl S3DMaterial {
             .frame_references
             .iter()
             // [TextureFragment]s reference a [TextureImagesFragment]
-            .map(move |r| wld.get(&r))
+            .map(move |r| wld.get(r))
             .flat_map(|image| match image {
                 // The [TextureImagesFragment] itself contains a collection of filenames. In
                 // practice this seems to always be just a single filename.

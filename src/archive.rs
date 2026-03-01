@@ -3,7 +3,7 @@ use crate::util::texture::{image_from_bmp, tex_from_bmp};
 #[cfg(feature = "dds")]
 use crate::util::texture::image_from_dds;
 use crate::wld::S3DWld;
-use libeq_archive::EqArchive;
+use libeq_pfs::PfsReader;
 use godot::classes::{AudioStreamWav, ImageTexture, RefCounted, Image};
 use godot::prelude::*;
 use std::fs::File;
@@ -14,7 +14,7 @@ use std::ffi::OsStr;
 #[class(init)]
 pub struct EQArchive {
     base: Base<RefCounted>,
-    archive: Option<EqArchive>,
+    archive: Option<PfsReader<File>>,
     /// The file stem of the archive, e.g. "rivervale".  This is used to get the main WLD out of the archive without specifying its name.
     name: String,
 }
@@ -25,16 +25,21 @@ impl EQArchive {
     #[func]
     pub fn get_filenames(&mut self) -> PackedStringArray {
         self.archive
-            .as_ref()
+            .as_mut()
             .expect("The load() method must be called to initialize this class.")
+            .filenames()
+            .unwrap_or_else(|e| {
+                godot_error!("Failed to load filenames from archive: {e}");
+                vec![]
+            })
             .iter()
-            .map(|(s,_)| GString::from(s))
+            .map(GString::from)
             .collect()
     }
 
     /// Returns a Texture2D representation of the given bitmap filename
     #[func]
-    pub fn get_texture(&self, filename: GString) -> Option<Gd<ImageTexture>> {
+    pub fn get_texture(&mut self, filename: GString) -> Option<Gd<ImageTexture>> {
         let data = self._get(filename.to_string().as_str())?;
         tex_from_bmp(data)
             .map_err(|e| {
@@ -45,7 +50,7 @@ impl EQArchive {
 
     /// Returns a Image representation of the given bitmap filename
     #[func]
-    pub fn get_image(&self, filename: GString) -> Option<Gd<Image>> {
+    pub fn get_image(&mut self, filename: GString) -> Option<Gd<Image>> {
         let data = self._get(filename.to_string().as_str())?;
         match Path::new(filename.to_string().as_str()).extension().and_then(OsStr::to_str).expect("Filename should have extension") {
             "bmp" => {
@@ -72,7 +77,7 @@ impl EQArchive {
 
     /// Returns a Sound representation of the given audio filename (WAV)
     #[func]
-    pub fn get_sound(&self, filename: GString) -> Option<Gd<AudioStreamWav>> {
+    pub fn get_sound(&mut self, filename: GString) -> Option<Gd<AudioStreamWav>> {
         let data = self._get(filename.to_string().as_str())?;
         sound_from_bytes(data)
             .map_err(|e| {
@@ -83,7 +88,7 @@ impl EQArchive {
 
     /// Returns an EQWld object representing a WLD file
     #[func]
-    pub fn get_wld(&self, filename: GString) -> Option<Gd<S3DWld>> {
+    pub fn get_wld(&mut self, filename: GString) -> Option<Gd<S3DWld>> {
         self._get_wld(filename.to_string().as_str())
     }
 
@@ -91,26 +96,26 @@ impl EQArchive {
     /// For Zone S3Ds, this is the WLD containing the zone data.
     /// For ActorDef and Character S3Ds, this is the only WLD in the archive.
     #[func]
-    pub fn get_main_wld(&self) -> Option<Gd<S3DWld>> {
+    pub fn get_main_wld(&mut self) -> Option<Gd<S3DWld>> {
         self._get_wld(&format!("{0}.wld", &self.name))
     }
 
     /// In Zone S3Ds, this will return the lights.wld within the archive.
     #[func]
-    pub fn get_lights_wld(&self) -> Option<Gd<S3DWld>> {
+    pub fn get_lights_wld(&mut self) -> Option<Gd<S3DWld>> {
         self._get_wld("lights.wld")
     }
 
     /// In Zone S3Ds, this will return the objects.wld within the archive.
     #[func]
-    pub fn get_actorinst_wld(&self) -> Option<Gd<S3DWld>> {
+    pub fn get_actorinst_wld(&mut self) -> Option<Gd<S3DWld>> {
         self._get_wld("objects.wld")
     }
 
     // FIXME: This should return Variant::nil() if the file does't exist.
     /// Returns a raw bytes representation of the given file
     #[func]
-    pub fn get_bytes(&self, filename: GString) -> PackedByteArray {
+    pub fn get_bytes(&mut self, filename: GString) -> PackedByteArray {
         let data = self
             ._get(filename.to_string().as_str())
             .or_else(|| Some(vec![]))
@@ -124,12 +129,12 @@ impl EQArchive {
     /// Not possible to initialize in GDScript
     pub fn load(&mut self, filename: &str) {
         godot_print!("Loading archive: {0}", &filename);
-        let file = File::open(&filename)
+        let file = File::open(filename)
             .map_err(|e| godot_error!("Failed to open archive: {filename}: {e}"))
             .unwrap();
 
         self.archive = Some(
-            EqArchive::read(file)
+            PfsReader::open(file)
                 .map_err(|e| godot_error!("Failed to parse S3D archive: {filename}: {e:?}"))
                 .unwrap(),
         );
@@ -137,18 +142,23 @@ impl EQArchive {
     }
     /// Attempt to get the given data from the archive.
     /// An error is printed in Godot if the file does not exist.
-    fn _get(&self, filename: &str) -> Option<Vec<u8>> {
+    fn _get(&mut self, filename: &str) -> Option<Vec<u8>> {
         self.archive
-            .as_ref()
+            .as_mut()
             .expect("The load() method must be called to initialize this class.")
-            .iter()
-            .find(|(name, _)| name == &filename)
-            .or_else(|| { godot_error!("{filename} not found in from archive"); None })
-            .and_then(|(_, data)| Some(data.clone()))
+            .get(filename)
+            .unwrap_or_else(|e| {
+                godot_error!("Failed to load {filename} from archive: {e}");
+                None
+            })
+            .or_else(|| {
+                godot_error!("{filename} not found in archive");
+                None
+            })
     }
 
     /// Returns an EQWld object representing a WLD file
-    fn _get_wld(&self, filename: &str) -> Option<Gd<S3DWld>> {
+    fn _get_wld(&mut self, filename: &str) -> Option<Gd<S3DWld>> {
         let data = self._get(filename)?;
         let mut wld: Gd<S3DWld> = Gd::default();
         wld.bind_mut().load(data);
