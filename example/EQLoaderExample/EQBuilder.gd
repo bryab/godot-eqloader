@@ -8,6 +8,7 @@ var shader_add: Shader = preload("res://shaders/eq_additive.gdshader")
 var textures: Dictionary[String, Texture2D] = {}
 var materials: Dictionary[String, Variant] = {}
 var actordefs: Dictionary[String, Variant] = {}
+var _dict_lock = Mutex.new()
 
 func get_shader(shader_type_id: int) -> Shader:
 	if shader_type_id in [0x0B, 0x17]:
@@ -27,10 +28,18 @@ func get_eq_data_dir():
 func load_archive_textures(archive: EQArchive):
 	print("Loading textures from archive: %s" % [archive.name()])
 	var start = Time.get_ticks_msec()
+	
 	for filename in archive.get_filenames():
-		if filename.ends_with(".bmp"):
+		if not filename.ends_with(".bmp"):
+			continue
+		var texture = archive.get_texture(filename)
+		if texture:
 			#print("Loaded texture: %s" % [filename])
-			textures[filename] = archive.get_texture(filename)
+			_dict_lock.lock()
+			textures[filename] = texture
+			_dict_lock.unlock()
+		else:
+			push_error("Failed to load texture: %s" % [filename])
 	var duration = Time.get_ticks_msec() - start
 	print("Time to load textures: %dms" % [duration])
 
@@ -119,10 +128,16 @@ func create_material(material_fragment: S3DMaterial) -> Material:
 	# For invisible materials, I am setting a null value.
 	# This is used later when building the mesh to skip polygons with this material.
 	if not material_fragment.visible():
+		_dict_lock.lock()
 		materials[material_name] = null
+		_dict_lock.unlock()
 		return
 	
 	var texture = get_texture_for_material(material_fragment)
+
+	if not texture:
+		push_error("Cannot build material %s, unable to find texture" % [material_name])
+		return null
 
 	var shader_type_id = material_fragment.shader_type_id()
 	# Note: I am just using standard material here but you'd need to provide different shaders for the various shader types: `material.shader_type_id()`
@@ -136,7 +151,9 @@ func create_material(material_fragment: S3DMaterial) -> Material:
 	# So in the shader I am allowing some wiggle room.
 	if texture.has_meta("key_color"):
 		material.set_shader_parameter("key_color", texture.get_meta("key_color"))
+	_dict_lock.lock()
 	materials[material_name] = material
+	_dict_lock.unlock()
 	return material
 
 func build_mesh(eqmesh: S3DMesh, vertex_colors: PackedColorArray = []) -> ArrayMesh:
