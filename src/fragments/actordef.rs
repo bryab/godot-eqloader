@@ -10,7 +10,7 @@ use super::frag_to_dict;
 use crate::wld::gd_from_frag;
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DActorDef {
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, ActorDef>>,

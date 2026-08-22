@@ -30,7 +30,7 @@ pub struct Bone {
     rest_quaternion: Quaternion,
 }
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DBone {
     base: Base<RefCounted>,
     _bone: Option<Bone>,
@@ -99,7 +99,7 @@ impl S3DBone {
 ///
 /// With this class you can build a character's skeleton, meshes and animations.
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DHierSprite {
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, HierarchicalSpriteDef>>,

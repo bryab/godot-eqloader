@@ -1,19 +1,19 @@
-[gd_scene load_steps=4 format=3 uid="uid://bvlbu0mm6qikk"]
+[gd_scene format=3 uid="uid://bvlbu0mm6qikk"]
 
-[ext_resource type="Script" path="res://EQLoaderExample.gd" id="1_7ejm7"]
-[ext_resource type="Script" path="res://PlayerFloater.gd" id="2_6wtfn"]
+[ext_resource type="Script" uid="uid://cfa6dfvaxsnug" path="res://EQLoaderExample.gd" id="1_7ejm7"]
+[ext_resource type="Script" uid="uid://dajkegs2wucy7" path="res://PlayerFloater.gd" id="2_6wtfn"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_sgq3o"]
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" unique_id=1989774686]
 
-[node name="S3DExample" type="Node3D" parent="."]
+[node name="S3DExample" type="Node3D" parent="." unique_id=178821301]
 script = ExtResource("1_7ejm7")
 
-[node name="PlayerFloater" type="CharacterBody3D" parent="."]
+[node name="PlayerFloater" type="CharacterBody3D" parent="." unique_id=59530182]
 script = ExtResource("2_6wtfn")
 
-[node name="Camera3D" type="Camera3D" parent="PlayerFloater"]
+[node name="Camera3D" type="Camera3D" parent="PlayerFloater" unique_id=406414491]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerFloater"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlayerFloater" unique_id=462519737]
 shape = SubResource("CapsuleShape3D_sgq3o")

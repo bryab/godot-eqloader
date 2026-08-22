@@ -56,7 +56,7 @@ pub fn gd_from_frag(wld: &Arc<WldDoc>, index: u32) -> Variant {
 }
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DWld {
     base: Base<RefCounted>,
     wld: Option<Arc<WldDoc>>,

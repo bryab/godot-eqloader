@@ -5,9 +5,9 @@ extends Node3D
 var default_material = ShaderMaterial.new()
 var shader_standard: Shader = preload("res://shaders/eq_standard.gdshader")
 var shader_add: Shader = preload("res://shaders/eq_additive.gdshader")
-var textures = {}
-var materials = {}
-var actordefs = {}
+var textures: Dictionary[String, Texture2D] = {}
+var materials: Dictionary[String, Variant] = {}
+var actordefs: Dictionary[String, Variant] = {}
 
 func get_shader(shader_type_id: int) -> Shader:
 	if shader_type_id in [0x0B, 0x17]:
@@ -20,15 +20,16 @@ func get_eq_data_dir():
 		if not eqdir:
 			continue
 		if DirAccess.open(eqdir):
-			print("This is the eqdir: %s" % [eqdir])
+			#print("This is the eqdir: %s" % [eqdir])
 			return eqdir
 	push_error("Failed to find any eq data dir.")
 	
-func load_archive_textures(archive):
-	print("Loading textures from archive: %s" % [archive])
+func load_archive_textures(archive: EQArchive):
+	print("Loading textures from archive: %s" % [archive.name()])
 	var start = Time.get_ticks_msec()
 	for filename in archive.get_filenames():
 		if filename.ends_with(".bmp"):
+			#print("Loaded texture: %s" % [filename])
 			textures[filename] = archive.get_texture(filename)
 	var duration = Time.get_ticks_msec() - start
 	print("Time to load textures: %dms" % [duration])
@@ -93,6 +94,9 @@ func load_zone(zone_name: String):
 
 
 func get_texture(texture_filename: String) -> Texture:
+	if not texture_filename in textures:
+		push_error("Requested texture is not loaded: %s" % [texture_filename])
+		return null
 	return textures[texture_filename]
 	
 func get_texture_for_material(material_fragment: S3DMaterial) -> Texture:

@@ -21,9 +21,6 @@ Load a character file only:
 
 # Building
 
-First, make sure to follow the setup instructions for [the gdextension crate](https://github.com/godot-rust/gdextension). At the time of this writing, that includes setting the `GODOT4_BIN` environment variable to point to your Godot4 binary.
-Then...
-
 `cargo build`
 
 Or for a release build:

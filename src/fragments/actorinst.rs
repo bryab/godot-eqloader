@@ -11,7 +11,7 @@ use owning_ref::ArcRef;
 use super::frag_to_dict;
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DActorInstance {
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, Actor>>,

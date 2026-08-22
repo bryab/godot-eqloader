@@ -11,7 +11,7 @@ use std::path::Path;
 use std::ffi::OsStr;
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct EQArchive {
     base: Base<RefCounted>,
     archive: Option<PfsReader<File>>,
@@ -21,6 +21,12 @@ pub struct EQArchive {
 
 #[godot_api]
 impl EQArchive {
+
+    #[func]
+    pub fn name(&self) -> GString {
+        return GString::from(&self.name)
+    }
+
     /// Returns a list of all filenames within the archive.
     #[func]
     pub fn get_filenames(&mut self) -> PackedStringArray {

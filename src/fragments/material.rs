@@ -45,7 +45,7 @@ use super::frag_to_dict;
 // }
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DMaterial {
     base: Base<RefCounted>,
     fragment: Option<ArcRef<WldDoc, MaterialDef>>,

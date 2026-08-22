@@ -2,7 +2,7 @@ use crate::archive::EQArchive;
 use godot::classes::{RefCounted, ProjectSettings};
 use godot::prelude::*;
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct EQArchiveLoader {
     base: Base<RefCounted>,
 }

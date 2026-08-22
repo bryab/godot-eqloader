@@ -548,7 +548,7 @@ struct DmSpriteProvider {
 }
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DMesh {
     base: Base<RefCounted>,
     provider: Option<Box<dyn MeshProvider>>,

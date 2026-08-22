@@ -45,7 +45,7 @@ pub trait S3DFragment {
 }
 
 #[derive(GodotClass)]
-#[class(init)]
+#[class(init, tool)]
 pub struct S3DUnknownFragment {
     base: Base<RefCounted>,
     /// Index within the WLD - note that indices begin at 1.
