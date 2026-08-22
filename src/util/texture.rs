@@ -2,10 +2,10 @@ use godot::classes::image::Format;
 use godot::classes::{Image, ImageTexture};
 use godot::prelude::*;
 use image::codecs::bmp::BmpDecoder;
-use image::DynamicImage;
-use std::io::Cursor;
 #[cfg(feature = "dds")]
 use image::codecs::dds::DdsDecoder;
+use image::DynamicImage;
+use std::io::Cursor;
 
 #[cfg(feature = "dds")]
 pub fn image_from_dds(dds_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
@@ -21,7 +21,8 @@ pub fn image_from_dds(dds_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
         false,
         Format::RGBA8,
         &PackedByteArray::from(&buffer.into_raw()[..]),
-    ).ok_or_else(|| "Failed to create Godot Image from Image")?;
+    )
+    .ok_or_else(|| "Failed to create Godot Image from Image")?;
     Ok(image)
 }
 
@@ -86,10 +87,12 @@ pub fn image_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<Image>, &'static str> {
 /// The "key color" for cutout transparency is the first color in the BMP palette.  This is stored as metadata in the Godot image to be used later.
 pub fn tex_from_bmp(bmp_data: Vec<u8>) -> Result<Gd<ImageTexture>, &'static str> {
     let image = image_from_bmp(bmp_data)?;
-    let key_color = image.get_meta("key_color");
     let mut tex = ImageTexture::create_from_image(&image)
         .ok_or_else(|| "Failed to create Godot ImageTexture from Godot Image")?;
-    tex.set_meta(&StringName::from("key_color"), &key_color);
+    if image.has_meta("key_color") {
+        let key_color = image.get_meta("key_color");
+        tex.set_meta(&StringName::from("key_color"), &key_color);
+    }
     Ok(tex)
 }
 
