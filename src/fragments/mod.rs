@@ -8,22 +8,22 @@ pub use actorinst::*;
 use godot::classes::RefCounted;
 use godot::prelude::*;
 pub use hiersprite::*;
-use libeq_wld::parser::{Fragment, WldDoc};
+use libeq_wld::parser::{Fragment, WldDoc, FragmentType};
 pub use material::*;
 pub use mesh::*;
 use owning_ref::ArcRef;
 use std::sync::Arc;
 
 #[cfg(feature = "serde")]
-fn frag_to_dict<T: 'static + Fragment + serde::ser::Serialize>(wld: &WldDoc, fragment: &T) -> Dictionary {
+fn frag_to_dict<T: 'static + Fragment + serde::ser::Serialize>(wld: &WldDoc, fragment: &T) -> VarDictionary {
     use godot::classes::Json;
     let frag = fragment.as_any().downcast_ref::<T>().unwrap();
     let json_string =
         serde_json::to_string(frag).unwrap();
     let mut json = Json::new_gd();
-    let _result = json.parse(&GString::from(json_string));
+    let _result = json.parse(&GString::from(&json_string));
     let variant = json.get_data();
-    let mut d = variant.to::<Dictionary>();
+    let mut d = variant.to::<VarDictionary>();
     d.set("type_id", frag.type_id());
     d.set("name", wld.get_string(*frag.name_ref()).unwrap());
     d
@@ -69,7 +69,7 @@ impl S3DUnknownFragment {
 
     #[cfg(feature = "serde")]
     #[func]
-    pub fn as_dict(&self) -> Dictionary {
+    pub fn as_dict(&self) -> VarDictionary {
         let wld = self.get_wld().as_ref();
         let fragment_type = wld.at(self.index as usize - 1).unwrap();
         match fragment_type {
@@ -124,10 +124,10 @@ impl S3DUnknownFragment {
     }
 }
 
-// impl S3DUnknownFragment {
-//     fn get_wld(&self) -> &Arc<WldDoc> {
-//         self.wld
-//             .as_ref()
-//             .expect("Failed to get WLD reference!")
-//     }
-// }
+impl S3DUnknownFragment {
+    fn get_wld(&self) -> &Arc<WldDoc> {
+        self.wld
+            .as_ref()
+            .expect("Failed to get WLD reference!")
+    }
+}

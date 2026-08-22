@@ -75,7 +75,7 @@ impl S3DActorDef {
 
     #[cfg(feature = "serde")]
     #[func]
-    pub fn as_dict(&self) -> Dictionary {
+    pub fn as_dict(&self) -> VarDictionary {
         let frag = self.get_frag();
         let wld = self.get_wld();
         frag_to_dict(wld, frag)

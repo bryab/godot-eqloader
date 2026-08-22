@@ -23,14 +23,14 @@ trait MeshProvider {
     fn uvs(&self) -> PackedVector2Array; 
     fn bone_indices(&self) -> PackedInt32Array;   
     fn bone_weights(&self) -> PackedFloat32Array;
-    fn face_material_groups(&self) -> Array<VariantArray>; 
+    fn face_material_groups(&self) -> Array<VarArray>; 
     fn indices(&self) -> PackedInt32Array;   
     fn collision_vertices(&self) -> PackedVector3Array;
     fn is_animated(&self) -> bool;
     fn animated_vertices(&self) -> Array<PackedVector3Array>;
     fn animation_speed(&self) -> f32;
     #[cfg(feature = "serde")]
-    fn as_dict(&self) -> Dictionary;
+    fn as_dict(&self) -> VarDictionary;
 }
 
 struct DmSprite2Provider {
@@ -127,7 +127,7 @@ impl MeshProvider for DmSprite2Provider {
     }
 
 
-    fn face_material_groups(&self) -> Array<VariantArray> {
+    fn face_material_groups(&self) -> Array<VarArray> {
         let wld = self.get_wld();
         let materials = self.materials();
         let mut pos = 0;
@@ -164,7 +164,7 @@ impl MeshProvider for DmSprite2Provider {
                     })
                     .collect();
 
-                let mut array = VariantArray::new();
+                let mut array = VarArray::new();
                 array.push(&Variant::from(GString::from(
                     wld.get_string(material.name_reference)
                         .expect("Material name should be a valid string"),
@@ -232,13 +232,13 @@ impl MeshProvider for DmSprite2Provider {
     }
 
     
-        // pub fn faces(&self) -> Array<VariantArray> {
+        // pub fn faces(&self) -> Array<VarArray> {
         //     let frag = self.get_frag();
         //     let scale = 1.0 / (1 << frag.scale) as f32;
         //     frag.faces
         //         .iter()
         //         .map(|face| {
-        //             let mut arr = VariantArray::new();
+        //             let mut arr = VarArray::new();
         //             arr.push(Variant::from(face.flags));
         //             arr.push(Variant::from(PackedVector3Array::from(&[
         //                 wld_i16_pos_to_gd(&frag.positions[face.vertex_indexes.2 as usize], scale),
@@ -251,7 +251,7 @@ impl MeshProvider for DmSprite2Provider {
         // }
 
     #[cfg(feature = "serde")]
-    fn as_dict(&self) -> Dictionary {
+    fn as_dict(&self) -> VarDictionary {
         let frag = self.get_frag();
         let wld = self.get_wld();
         frag_to_dict(wld, frag)
@@ -377,7 +377,7 @@ struct DmSpriteProvider {
     }
 
 
-    fn face_material_groups(&self) -> Array<VariantArray> {
+    fn face_material_groups(&self) -> Array<VarArray> {
         let wld = self.get_wld();
         let materials = self.materials();
         let mut pos = 0;
@@ -416,7 +416,7 @@ struct DmSpriteProvider {
                     })
                     .collect();
 
-                let mut array = VariantArray::new();
+                let mut array = VarArray::new();
                 array.push(&Variant::from(GString::from(
                     wld.get_string(material.name_reference)
                         .expect("Material name should be a valid string"),
@@ -485,7 +485,7 @@ struct DmSpriteProvider {
     }
 
     #[cfg(feature = "serde")]
-    fn as_dict(&self) -> Dictionary {
+    fn as_dict(&self) -> VarDictionary {
         let frag = self.get_frag();
         let wld = self.get_wld();
         frag_to_dict(wld, frag)
@@ -652,7 +652,7 @@ impl S3DMesh {
     ///
     /// Invisible materials are skipped entirely.
     #[func]
-    pub fn face_material_groups(&self) -> Array<VariantArray> {
+    pub fn face_material_groups(&self) -> Array<VarArray> {
         self.get_provider().face_material_groups()
     }
 
@@ -691,7 +691,7 @@ impl S3DMesh {
 
     #[cfg(feature = "serde")]
     #[func]
-    pub fn as_dict(&self) -> Dictionary {
+    pub fn as_dict(&self) -> VarDictionary {
         self.get_provider().as_dict()
     }
 }

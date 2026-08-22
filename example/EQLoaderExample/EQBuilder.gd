@@ -272,7 +272,7 @@ func load_chr(s3d_name) -> Array[Node3D]:
 			
 func build_animation_player(eqskel: S3DHierSprite) -> AnimationPlayer:
 	# Animations currently are the trickiest part of this API.
-	# On the Rust side, I generate a Dictionary of key,val pairs
+	# On the Rust side, I generate a VarDictionary of key,val pairs
 	# where the key is the animation name,
 	# and the value is the Godot Animation resource.
 

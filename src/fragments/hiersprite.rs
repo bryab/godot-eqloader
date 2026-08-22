@@ -224,8 +224,8 @@ impl S3DHierSprite {
 
     // Returns a dictionary, where keys are animation names and values are frame tranforms for each DAG
     #[func]
-    pub fn animation_dict(&self) -> Dictionary {
-        self._animations().into_iter().collect()
+    pub fn animation_dict(&self) -> Dictionary<GString, Gd<Animation>> {
+        self._animations().into_iter().map(|(k,v)| {(GString::from(&k), v)}).collect()
     }
 
     // Returns a dictionary, where keys are animation names and values are frame tranforms for each DAG
@@ -258,7 +258,7 @@ impl S3DHierSprite {
 
     #[cfg(feature = "serde")]
     #[func]
-    pub fn as_dict(&self) -> Dictionary {
+    pub fn as_dict(&self) -> VarDictionary {
         let frag = self.get_frag();
         let wld = self.get_wld();
         frag_to_dict(wld, frag)

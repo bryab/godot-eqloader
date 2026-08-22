@@ -74,4 +74,4 @@ The following features may be supported in the future, and any help is welcome:
 
  # Extra Features
 
- This library can be compiled with a `serde` feature, which adds a new method to all fragments: `as_dict`.  This returns a serde-serialized representation of the underlying raw fragment data as a Godot `Dictionary`, for analysis.  For fragments that do not have a wrapper, you can get them and look at their data with `wld.at(fragment_index).as_dict()`.
+ This library can be compiled with a `serde` feature, which adds a new method to all fragments: `as_dict`.  This returns a serde-serialized representation of the underlying raw fragment data as a Godot `VarDictionary`, for analysis.  For fragments that do not have a wrapper, you can get them and look at their data with `wld.at(fragment_index).as_dict()`.
